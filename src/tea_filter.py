@@ -141,8 +141,8 @@ class FilterCoLine(TransformerMixin, BaseEstimator):
             print("LR 筛除权重为负的特征， 剩余%s" % _X.shape[1])
         return self
 
-    def transform(self, X):
-        return X[self.left_features]
+    def transform(self, x):
+        return x[self.left_features]
 
 
 class OutlierTransform(TransformerMixin, BaseEstimator):
