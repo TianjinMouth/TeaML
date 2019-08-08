@@ -10,7 +10,6 @@ import shap
 import numpy as np
 
 
-# VIF筛选器
 class FilterVif(TransformerMixin, BaseEstimator):
     def __init__(self, vif_threshold=15):
         self.vif_threshold = vif_threshold
@@ -30,7 +29,6 @@ class FilterVif(TransformerMixin, BaseEstimator):
         return x[self.left_features]
 
 
-# 模型筛选器
 class FilterModel(TransformerMixin, BaseEstimator):
     def __init__(self, model_type='lgb', left_features_num=35):
         self.left_features_num = left_features_num
@@ -57,7 +55,6 @@ class FilterModel(TransformerMixin, BaseEstimator):
         return x[self.left_features]
 
 
-# IV筛选器
 class FilterIV(TransformerMixin, BaseEstimator):
     def __init__(self, fst_keep=80, left_features_num=35):
         self.fst_keep = fst_keep
@@ -78,7 +75,6 @@ class FilterIV(TransformerMixin, BaseEstimator):
         return x[self.left_features]
 
 
-# shap筛选器
 class FilterSHAP(TransformerMixin, BaseEstimator):
     def __init__(self, left_features_num=None):
         self.left_features_num = left_features_num
@@ -304,7 +300,7 @@ class FilterStepWise(TransformerMixin, BaseEstimator):
                 self.left_features = included.copy()[:self.left_features_num]
         elif self.method == 'r_squared':
             """
-            前向逐步回归算法，源代码来自https://planspace.org/20150423-forward_selection_with_statsmodels/
+            前向逐步回归算法，来自https://planspace.org/20150423-forward_selection_with_statsmodels/
             使用Adjusted R-squared来评判新加的参数是否提高回归中的统计显著性
             Linear model designed by forward selection.
             Parameters:

@@ -45,7 +45,7 @@ class TeaOneHotEncoder(TransformerMixin, BaseEstimator):
                 self.oh_dict[f] = _one_hot
             return self
         else:
-            print('Please fill in your categorical variance')
+            print('Please check out your categorical variance')
 
     def transform(self, x):
         for c in self.categorical_col:
