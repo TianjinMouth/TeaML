@@ -1,5 +1,5 @@
 from Tea import *
-test = pd.read_csv('examples.csv')
+test = pd.read_csv('test.csv')
 
 # encoder
 ct = TeaBadRateEncoder(num=1)
@@ -30,6 +30,5 @@ tea = Tea(['core_lend_request_id', 'lend_customer_id', 'customer_sex', 'data_cen
 tea.wash(test, null_drop_rate=0.8, zero_drop_rate=0.9)
 tea.cook(encoder)
 tea.select(method)
-tea.drink(LGBMClassifier(max_depth=-1, learning_rate=0.1, n_estimators=30, class_weight='balanced',
-                                 reg_alpha=11, num_leaves=9, boosting_type='gbdt'))
+tea.drink(LogisticRegression(penalty='l2', C=1, class_weight='balanced'))
 tea.sleep(woe.bins)
