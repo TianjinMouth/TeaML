@@ -16,8 +16,8 @@ warnings.filterwarnings('ignore')
 
 
 class WOE:
-    def __init__(self, bins=10, psi_threshold=None, monotony_merge=True, bad_rate_merge=False, bad_rate_sim_threshold=0.05,
-                 chi2_merge=False, chi2_threshold=3.841, iv_threshold=None):
+    def __init__(self, bins=10, psi_threshold=None, monotony_merge=True, bad_rate_merge=False,
+                 bad_rate_sim_threshold=0.05,chi2_merge=False, chi2_threshold=3.841, iv_threshold=None):
         self.bins = bins
         self.psi_threshold = psi_threshold
         self.bad_rate_merge = bad_rate_merge
