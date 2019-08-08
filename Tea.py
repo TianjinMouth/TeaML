@@ -27,7 +27,7 @@ class WOE:
         self.monotony_merge = monotony_merge
         self.iv_threshold = iv_threshold
 
-    def woe_processing(self, x_train, y_train, x_oot, y_oot):
+    def woe_processing(self, x_train, y_train, x_oot, y_oot, gating=True):
         # WOE编码
         woe = AutoBinWOE(bins=self.bins, monotony_merge=self.monotony_merge, bad_rate_merge=self.bad_rate_merge,
                          bad_rate_sim_thres=self.bad_rate_sim_threshold,
@@ -94,13 +94,16 @@ class WOE:
                 x_oot_woe = x_oot_woe[left_features]
             else:
                 raise ValueError("iv_threshold must be a float like 0.01")
-        return x_woe, x_oot_woe, woe, psi_ks_iv
+
+        if gating:
+            return x_woe, x_oot_woe, woe, psi_ks_iv
+        else:
+            return x_train, x_oot, woe, psi_ks_iv
 
 
 class Tea:
     def __init__(self, useless_features, label='is_overdue', datetime_feature='create_time', split_method='oot'
-                 , oot_threshold=None, oot_ratio=1/6, null_drop_rate=0.8, zero_drop_rate=0.9,
-                 file_path='/Users/finupgroup/Desktop/final_report.xlsx'):
+                 , oot_threshold=None, oot_ratio=1/6, file_path='final_report.xlsx'):
         """
 
         :param useless_features: list
@@ -109,8 +112,6 @@ class Tea:
         :param split_method: 'oos' or 'oot'
         :param oot_threshold: if split_method == 'oot'
         :param oot_ratio: less than 1
-        :param null_drop_rate: less than 1
-        :param zero_drop_rate: less than 1
         :param file_path: file_path
         """
         self.oot_ratio = oot_ratio
@@ -133,11 +134,10 @@ class Tea:
         self.label = label  # y值列的列名
         self.useless_features = useless_features  # 不参与训练的列
         self.file_path = file_path  # 报告保存地址
-        self.null_drop_rate = null_drop_rate  # 空值舍弃阈值
-        self.zero_drop_rate = zero_drop_rate  # 0值舍弃阈值
         self.method = None  # 变量筛选的顺序列表
         self.encoders = None  # 编码器
         self.bins = None
+        self.method_judge = []
 
     @staticmethod
     def get_describe(x):
@@ -175,7 +175,7 @@ class Tea:
             a.insert(0, 'month', month)
         return a
 
-    def wash(self, data):
+    def wash(self, data, null_drop_rate=0.8, zero_drop_rate=0.9):
         # ------------------------  STEP 1 训练测试集划分、Bad rate替换及变量初筛--------------------------------
         df = data.copy()
         df[self.datetime_feature] = pd.to_datetime(df[self.datetime_feature])
@@ -228,8 +228,8 @@ class Tea:
                 X.describe().T.reset_index()[['index', 'mean', 'std', 'min', '25%', '50%', '75%', 'max']]).rename(
                 columns={'index': '变量名称'}),
             how='left', on='变量名称')
-        left_features = list(set(sheet_2_tmp[sheet_2_tmp['空值个数占比'] < self.null_drop_rate]['变量名称']) & set(
-            sheet_2_tmp[sheet_2_tmp['0值个数占比'] < self.zero_drop_rate]['变量名称']))
+        left_features = list(set(sheet_2_tmp[sheet_2_tmp['空值个数占比'] < null_drop_rate]['变量名称']) & set(
+            sheet_2_tmp[sheet_2_tmp['0值个数占比'] < zero_drop_rate]['变量名称']))
 
         X = X[left_features]
         X_train = X_train[left_features]
@@ -262,15 +262,37 @@ class Tea:
         self.method = method
         _X = self.X_train.copy()
         _X_oot = self.X_oot.copy()
-        for estimator in self.method:
-            if isinstance(estimator, WOE):
-                _X, _X_oot, woe, psi_ks_iv = estimator.woe_processing(_X, self.y_train, _X_oot, self.y_oot)
-            elif isinstance(estimator, OutlierTransform) or isinstance(estimator, FilterCorr) or isinstance(estimator, FilterVif):
-                _X = estimator.fit_transform(_X)
-                _X_oot = estimator.transform(_X_oot)
-            else:
-                _X = estimator.fit_transform(_X, self.y_train)
-                _X_oot = estimator.transform(_X_oot)
+
+        try:
+            self.method_judge = [1 if isinstance(estimator, WOE) else 0 for estimator in method]
+        except:
+            pass
+
+        if sum(self.method_judge) != 0:
+            for estimator in self.method:
+                if isinstance(estimator, WOE):
+                    _X, _X_oot, woe, psi_ks_iv = estimator.woe_processing(_X, self.y_train, _X_oot, self.y_oot, gating=True)
+                elif isinstance(estimator, OutlierTransform) \
+                        or isinstance(estimator, FilterCorr) \
+                        or isinstance(estimator, FilterVif):
+                    _X = estimator.fit_transform(_X)
+                    _X_oot = estimator.transform(_X_oot)
+                else:
+                    _X = estimator.fit_transform(_X, self.y_train)
+                    _X_oot = estimator.transform(_X_oot)
+        elif sum(self.method_judge) == 0:
+            for estimator in self.method:
+                if isinstance(estimator, OutlierTransform) \
+                        or isinstance(estimator, FilterCorr) \
+                        or isinstance(estimator, FilterVif):
+                    _X = estimator.fit_transform(_X)
+                    _X_oot = estimator.transform(_X_oot)
+                else:
+                    _X = estimator.fit_transform(_X, self.y_train)
+                    _X_oot = estimator.transform(_X_oot)
+            wow = WOE(bins=10, bad_rate_merge=True, bad_rate_sim_threshold=0.05)
+            _X, _X_oot, woe, psi_ks_iv = wow.woe_processing(_X, self.y_train, _X_oot, self.y_oot, gating=False)
+
         X_woe, X_oot_woe = _X, _X_oot
         self.left_features = X_woe.columns.tolist()
         sheet_psi_ks_iv = psi_ks_iv[psi_ks_iv['字段名称'].isin(self.left_features)].reset_index(drop=True)
@@ -280,7 +302,10 @@ class Tea:
         self.X_oot_woe = X_oot_woe
 
     def drink(self, clf):
-        self.X_oot_woe = self.X_oot_woe.fillna(0.0)
+        if self.method_judge != 0:
+            self.X_oot_woe = self.X_oot_woe.fillna(0.0)
+        else:
+            pass
         ssss = StratifiedKFold(n_splits=5, random_state=11, shuffle=True)
         # clf = LogisticRegression(penalty='l2', C=0.5)
         clf, stacking_train, stacking_oot = train_by_cv(self.X_woe, self.y_train, self.X_oot_woe, self.y_oot, ssss, clf)

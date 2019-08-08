@@ -5,10 +5,10 @@ test = pd.read_csv('test.csv')
 ct = TeaBadRateEncoder(num=1)
 me = TeaMeanEncoder(categorical_features=[])
 t = TeaOneHotEncoder()
-encoder = [me]
+encoder = [t]
 
 # woe & feature selection
-woe = WOE(bins=10, bad_rate_merge=True, bad_rate_sim_thres=0.05, psi_threshold=0.1, iv_threshold=None)
+woe = WOE(bins=10, bad_rate_merge=True, bad_rate_sim_threshold=0.05, psi_threshold=0.1, iv_threshold=None)
 iv = FilterIV(200, 100)
 vif = FilterVif(50)
 mod = FilterModel('lr', 70)
@@ -18,7 +18,7 @@ fshap = FilterSHAP(70)
 outlier = OutlierTransform()
 filtercor = FilterCorr(20)
 stepwise = FilterStepWise(method='p_value')
-method = [woe]
+method = [outlier]
 
 # main
 tea = Tea(['core_lend_request_id', 'lend_customer_id', 'customer_sex', 'data_center_id', 'trace_back_time',
@@ -26,10 +26,8 @@ tea = Tea(['core_lend_request_id', 'lend_customer_id', 'customer_sex', 'data_cen
            'id_province_name', 'id_city_name'],
           'is_overdue_M0',
           datetime_feature='pass_time',
-          oot_threshold='2019-01-01',
-          null_drop_rate=0.8,
-          zero_drop_rate=0.9)
-tea.wash(test)
+          oot_threshold='2019-01-01')
+tea.wash(test, null_drop_rate=0.8, zero_drop_rate=0.9)
 tea.cook(encoder)
 tea.select(method)
 tea.drink(LogisticRegression(penalty='l2', C=1, class_weight='balanced'))

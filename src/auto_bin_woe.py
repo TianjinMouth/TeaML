@@ -215,7 +215,7 @@ class AutoBinWOE(object):
             best_bins = {"seq": seq, "bad": bad, "obs": obs}
             if len(seq) > 2:
                 diff = [abs(best_bins['bad'][i] / best_bins['obs'][i] - best_bins['bad'][i + 1] / best_bins['obs'][i + 1])
-                            for i in range(len(best_bins['obs']) - 1)]
+                        for i in range(len(best_bins['obs']) - 1)]
                 while min(diff) < (self.mean_bad_rate * self.bad_rate_sim_thres):
                     for i in range(len(diff)):
                         if diff[i] < (self.mean_bad_rate / self.bad_rate_sim_thres):
