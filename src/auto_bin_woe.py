@@ -36,18 +36,20 @@ class AutoBinWOE(object):
     若IV信息量取值大于0.3，认为该指标对因变量有较强的预测能力。
     实际应用时，可以保留IV值大于0.1的指标。
     """
-    def __init__(self, bins=10, cnum=1, monotony_merge=True, bad_rate_merge=False, bad_rate_sim_thres=0.05,
-                 chi2_merge=False, chi2_thres=2.706):
+    def __init__(self, bins=10, num=1, monotony_merge=True, bad_rate_merge=False, bad_rate_sim_threshold=0.05,
+                 chi2_merge=False, chi2_threshold=2.706):
         """
 
         :param bins: 初始分箱个数
-        :param cnum: 变量类别数，区分分类和连续变量
+        :param num: 变量类别数，区分分类和连续变量
         :param bad_rate_merge: 相近的bad_rate是否要合并
-        :param bad_rate_sim_thres: 相似性阈值，mean_bad_rate的乘数
+        :param bad_rate_sim_threshold: 相似性阈值，mean_bad_rate的乘数
+        :param chi2_merge: 相近的X^2是否要合并
+        :param chi2_threshold: X^2阈值
         """
         self.threshold = None
         self.bins = bins
-        self.cnum = cnum
+        self.num = num
         self.data_matrix = dict()
         self.continuous_col = []
         self.categorical_col = []
@@ -60,26 +62,26 @@ class AutoBinWOE(object):
         self.mean_bad_rate = 0
         self.monotony_merge = monotony_merge
         self.bad_rate_merge = bad_rate_merge
-        self.bad_rate_sim_thres = bad_rate_sim_thres
+        self.bad_rate_sim_threshold = bad_rate_sim_threshold
         self.chi2_merge = chi2_merge
-        self.chi2_thres = chi2_thres
+        self.chi2_threshold = chi2_threshold
 
-    def check_types(self, X, replace=True):
+    def check_types(self, x, replace=True):
         """
         区分连续变量和离散变量
-        :param X:
+        :param x:
         :param replace: 将保存的变量列表清空
         :return:
         """
         if replace:
             self.continuous_col = []
             self.categorical_col = []
-        for f in X.columns:
-            x = X[f]
+        for f in x.columns:
+            x_ = x[f]
             try:
-                x = x.astype('float')
-                counts = len(x.drop_duplicates())
-                if counts <= self.cnum:
+                x_ = x_.astype('float')
+                counts = len(x_.drop_duplicates())
+                if counts <= self.num:
                     self.categorical_col.append(f)
                 else:
                     self.continuous_col.append(f)
@@ -87,17 +89,17 @@ class AutoBinWOE(object):
                 self.categorical_col.append(f)
         self.type_checked = 1
 
-    def _bin_fit(self, X):
+    def _bin_fit(self, x):
         """
         分bin的fit，将阈值保存
-        :param X:
+        :param x:
         :return:
         """
-        self.check_types(X, replace=True)
+        self.check_types(x, replace=True)
         thresholds = {}
         for col in self.continuous_col:
-            x = X[col].values
-            thr = self._bin_single_fit(x)
+            x_ = x[col].values
+            thr = self._bin_single_fit(x_)
             thresholds[col] = thr
 
         self.threshold = thresholds
@@ -118,29 +120,29 @@ class AutoBinWOE(object):
             threshold[i] = [point1, point2]
         return threshold
 
-    def _bin_transform(self, X):
+    def _bin_transform(self, x):
         """
         将阈值transform到新的样本上
-        :param X:
+        :param x:
         :return:
         """
         tmp = []
         for col in self.continuous_col:
-            x = X[col].values
+            x_ = x[col].values
             thr = self.threshold[col]
-            res = X[col].copy()
+            res = x[col].copy()
             for k in thr.keys():
                 point1, point2 = thr[k]
-                x1 = x[np.where((x >= point1) & (x < point2))]
-                mask = np.in1d(x, x1)
+                x1 = x_[np.where((x_ >= point1) & (x_ < point2))]
+                mask = np.in1d(x_, x1)
                 res[mask] = k
-            res[np.isnan(x)] = -1
+            res[np.isnan(x_)] = -1
             tmp.append(res)
         return pd.DataFrame(np.array(tmp).T, columns=self.continuous_col)
 
-    def _bin_fit_transform(self, X):
-        self._bin_fit(X)
-        return self._bin_transform(X)
+    def _bin_fit_transform(self, x):
+        self._bin_fit(x)
+        return self._bin_transform(x)
 
     def _category_feature(self, x, y):
         data = pd.DataFrame({"var": x, "label": list(y)})
@@ -154,11 +156,11 @@ class AutoBinWOE(object):
 
     def monotony_single_fit(self, x, y, threshold):
         """
-        对cut labels 进行合并迭代,寻找使得abs(spearman coeffient)最大的labels组合
-        :param X: 原始数据列向量, pd.Series or np.array
+        对cut labels 进行合并迭代,寻找使得abs(Spearman coefficient)最大的labels组合
+        :param x: 原始数据列向量, pd.Series or np.array
         :param y: list or np.array or pd.Series
         :param threshold:
-        :return: new cut label and the best spearman coeffient
+        :return: new cut label and the best Spearman coefficient
         """
         data = pd.DataFrame({"var": x, "label": list(y)})
         data_group = data.groupby("var", as_index=False)["label"].agg(
@@ -214,11 +216,12 @@ class AutoBinWOE(object):
             obs = best_bins['obs']
             best_bins = {"seq": seq, "bad": bad, "obs": obs}
             if len(seq) > 2:
-                diff = [abs(best_bins['bad'][i] / best_bins['obs'][i] - best_bins['bad'][i + 1] / best_bins['obs'][i + 1])
+                diff = [abs(best_bins['bad'][i] / best_bins['obs'][i] - best_bins['bad'][i + 1] /
+                            best_bins['obs'][i + 1])
                         for i in range(len(best_bins['obs']) - 1)]
-                while min(diff) < (self.mean_bad_rate * self.bad_rate_sim_thres):
+                while min(diff) < (self.mean_bad_rate * self.bad_rate_sim_threshold):
                     for i in range(len(diff)):
-                        if diff[i] < (self.mean_bad_rate / self.bad_rate_sim_thres):
+                        if diff[i] < (self.mean_bad_rate / self.bad_rate_sim_threshold):
                             best_bins['bad'] = np.delete(bad, i)
                             best_bins['bad'][i] += bad[i]
                             best_bins['obs'] = np.delete(obs, i)
@@ -227,7 +230,8 @@ class AutoBinWOE(object):
                     seq = best_bins['seq']
                     bad = best_bins['bad']
                     obs = best_bins['obs']
-                    diff = [abs(best_bins['bad'][i] / best_bins['obs'][i] - best_bins['bad'][i + 1] / best_bins['obs'][i + 1])
+                    diff = [abs(best_bins['bad'][i] / best_bins['obs'][i] - best_bins['bad'][i + 1] /
+                                best_bins['obs'][i + 1])
                             for i in range(len(best_bins['obs']) - 1)]
                     if len(diff) < 2:
                         break
@@ -239,11 +243,12 @@ class AutoBinWOE(object):
             obs = best_bins['obs']
             best_bins = {"seq": seq, "bad": bad, "obs": obs}
             if len(seq) > 2:
-                chi2 = [(self.mean_bad_rate * best_bins['obs'][i] - best_bins['bad'][i]) ** 2 / self.mean_bad_rate * best_bins['obs'][i]
-                            for i in range(len(seq))]
-                while min(chi2) > self.chi2_thres:
+                chi2 = [(self.mean_bad_rate * best_bins['obs'][i] - best_bins['bad'][i]) ** 2 /
+                        self.mean_bad_rate * best_bins['obs'][i]
+                        for i in range(len(seq))]
+                while min(chi2) > self.chi2_threshold:
                     for i in range(len(chi2)-1):
-                        if chi2[i] > self.chi2_thres:
+                        if chi2[i] > self.chi2_threshold:
                             best_bins['bad'] = np.delete(bad, i)
                             best_bins['bad'][i] += bad[i]
                             best_bins['obs'] = np.delete(obs, i)
@@ -274,41 +279,41 @@ class AutoBinWOE(object):
         data_group_best.index = np.array(["bin_" + str(i) for i in range(data_group_best.shape[0])])
         return data_group_best, data_group_origin
 
-    def fit(self, X, y):
-        X_bin = self._bin_fit_transform(X)
+    def fit(self, x, y):
+        x_bin = self._bin_fit_transform(x)
         self.mean_bad_rate = y.mean()
-        for variable in tqdm(X_bin.columns):
+        for variable in tqdm(x_bin.columns):
             if variable in self.continuous_col:
                 threshold = self.threshold[variable]
-                data_matrix, data_group_origin = self.monotony_single_fit(X_bin[variable], y, threshold)
+                data_matrix, data_group_origin = self.monotony_single_fit(x_bin[variable], y, threshold)
                 self.data_matrix_origin.update({variable: data_group_origin})
             else:
-                data_matrix = self._category_feature(X_bin[variable], y)
+                data_matrix = self._category_feature(x_bin[variable], y)
             self.calc_woe(data_matrix)
             self.data_matrix.update({variable: data_matrix})
 
-    def transform(self, X):
-        return self._woe_replace(X)
+    def transform(self, x):
+        return self._woe_replace(x)
 
-    def _woe_replace(self, X):
-        X_bak = X.copy()
-        for col in tqdm(X_bak.columns):
+    def _woe_replace(self, x):
+        x_bak = x.copy()
+        for col in tqdm(x_bak.columns):
             dm = self.data_matrix[col]
             if col in self.continuous_col:
-                X_bak.loc[X[col] == 'tails', col] = 0.0
+                x_bak.loc[x[col] == 'tails', col] = 0.0
                 for i in range(len(dm)):
                     if np.isnan(dm['left'][i]):
-                        X_bak.loc[X[col].isnull(), col] = dm['woe'][i]
+                        x_bak.loc[x[col].isnull(), col] = dm['woe'][i]
                     else:
-                        X_bak.loc[(X[col] >= dm['left'][i]) & (X[col] < dm['right'][i]), col] = dm['woe'][i]
-        return X_bak
+                        x_bak.loc[(x[col] >= dm['left'][i]) & (x[col] < dm['right'][i]), col] = dm['woe'][i]
+        return x_bak
 
-    def cal_bin_ks(self, X, y, oot=False, origin=False):
-        df = pd.concat([X, pd.Series(y, name='y')], axis=1)
+    def cal_bin_ks(self, x, y, oot=False, origin=False):
+        df = pd.concat([x, pd.Series(y, name='y')], axis=1)
         new_data_matrix = {}
         if oot:
             print("cal bin ks, oot...")
-            for col in tqdm(X.columns):
+            for col in tqdm(x.columns):
                 if origin:
                     dm = self.data_matrix_origin[col].copy()
                 else:
@@ -348,7 +353,7 @@ class AutoBinWOE(object):
                 new_data_matrix[col] = dm
         else:
             print("cal bin ks, train...")
-            for col in tqdm(X.columns):
+            for col in tqdm(x.columns):
                 if origin:
                     dm = self.data_matrix_origin[col].copy()
                 else:
@@ -402,14 +407,14 @@ class AutoBinWOE(object):
         return psi
 
 
-def compute_ks(proba, target):
+def compute_ks(prob, target):
     """
     target: numpy array of shape (1,)
-    proba: numpy array of shape (1,), predicted probability of the sample being positive
+    prob: numpy array of shape (1,), predicted probability of the sample being positive
     returns:
     ks: float, ks score estimation
     """
 
-    get_ks = lambda proba, target: ks_2samp(proba[target == 1], proba[target != 1]).statistic
+    get_ks = lambda prob, target: ks_2samp(prob[target == 1], prob[target != 1]).statistic
 
-    return get_ks(proba, target)
+    return get_ks(prob, target)

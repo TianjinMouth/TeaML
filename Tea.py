@@ -30,8 +30,8 @@ class WOE:
     def woe_processing(self, x_train, y_train, x_oot, y_oot, gating=True):
         # WOE编码
         woe = AutoBinWOE(bins=self.bins, monotony_merge=self.monotony_merge, bad_rate_merge=self.bad_rate_merge,
-                         bad_rate_sim_thres=self.bad_rate_sim_threshold,
-                         chi2_merge=self.chi2_merge, chi2_thres=self.chi2_threshold)
+                         bad_rate_sim_threshold=self.bad_rate_sim_threshold,
+                         chi2_merge=self.chi2_merge, chi2_threshold=self.chi2_threshold)
         woe.fit(x_train, y_train)
         x_woe = woe.transform(x_train)
         x_oot_woe = woe.transform(x_oot)
