@@ -35,16 +35,16 @@ def feature_select(x_train, y_train, method='iv', kb=100, rfe=30):
     return left_features
 
 
-def compute_ks(proba, target):
+def compute_ks(prob, target):
     """
     target: numpy array of shape (1,)
-    proba: numpy array of shape (1,), predicted probability of the sample being positive
+    prob: numpy array of shape (1,), predicted probability of the sample being positive
     returns:
     ks: float, ks score estimation
     """
-    get_ks = lambda proba, target: ks_2samp(proba[target == 1], proba[target != 1]).statistic
+    get_ks = lambda prob, target: ks_2samp(prob[target == 1], prob[target != 1]).statistic
 
-    return get_ks(proba, target)
+    return get_ks(prob, target)
 
 
 def train_by_cv(x, y, x_oot, y_oot, sss, clf, weight=None, **kw):

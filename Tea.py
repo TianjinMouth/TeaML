@@ -16,22 +16,22 @@ warnings.filterwarnings('ignore')
 
 
 class WOE:
-    def __init__(self, bins=10, psi_threshold=None, monotony_merge=True, bad_rate_merge=False, bad_rate_sim_thres=0.05,
-                 chi2_merge=False, chi2_thres=3.841, iv_threshold=None):
+    def __init__(self, bins=10, psi_threshold=None, monotony_merge=True, bad_rate_merge=False, bad_rate_sim_threshold=0.05,
+                 chi2_merge=False, chi2_threshold=3.841, iv_threshold=None):
         self.bins = bins
         self.psi_threshold = psi_threshold
         self.bad_rate_merge = bad_rate_merge
-        self.bad_rate_sim_thres = bad_rate_sim_thres
+        self.bad_rate_sim_threshold = bad_rate_sim_threshold
         self.chi2_merge = chi2_merge
-        self.chi2_thres = chi2_thres
+        self.chi2_threshold = chi2_threshold
         self.monotony_merge = monotony_merge
         self.iv_threshold = iv_threshold
 
     def woe_processing(self, x_train, y_train, x_oot, y_oot):
         # WOE编码
         woe = AutoBinWOE(bins=self.bins, monotony_merge=self.monotony_merge, bad_rate_merge=self.bad_rate_merge,
-                         bad_rate_sim_thres=self.bad_rate_sim_thres,
-                         chi2_merge=self.chi2_merge, chi2_thres=self.chi2_thres)
+                         bad_rate_sim_thres=self.bad_rate_sim_threshold,
+                         chi2_merge=self.chi2_merge, chi2_thres=self.chi2_threshold)
         woe.fit(x_train, y_train)
         x_woe = woe.transform(x_train)
         x_oot_woe = woe.transform(x_oot)
@@ -41,36 +41,36 @@ class WOE:
         oot_bin = woe.cal_bin_ks(x_oot, y_oot, oot=True)
 
         # KS
-        ksins = []
-        ksoot = []
-        ksindex = []
+        ks_ins = []
+        ks_oot = []
+        ks_index = []
         for i in x_woe.columns:
             try:
-                ksins.append(max(train_bin[i][train_bin[i].ks.notnull()].ks))
-                ksoot.append(max(oot_bin[i][oot_bin[i].ks.notnull()].ks))
-                ksindex.append(i)
-            except Exception as e:
+                ks_ins.append(max(train_bin[i][train_bin[i].ks.notnull()].ks))
+                ks_oot.append(max(oot_bin[i][oot_bin[i].ks.notnull()].ks))
+                ks_index.append(i)
+            except Exception:
                 pass
 
         # IV
-        ivdata = []
-        ivindex = []
+        iv_data = []
+        iv_index = []
         for i in x_woe.columns:
             try:
                 tmp = sum(woe.data_matrix[i].iv)
                 if tmp == 0:
                     pass
                 else:
-                    ivindex.append(i)
-                    ivdata.append(tmp)
-            except Exception as e:
+                    iv_index.append(i)
+                    iv_data.append(tmp)
+            except Exception:
                 pass
 
         # PSI
         psi = pd.DataFrame(woe.cal_psi(train_bin, oot_bin), index=['psi']).T.reset_index().rename(
             columns={'index': '字段名称'})
-        iv = pd.DataFrame({'字段名称': ivindex, 'Information Value': ivdata})
-        ks = pd.DataFrame({'字段名称': ksindex, 'INS_KS': ksins, 'OOT_KS': ksoot})
+        iv = pd.DataFrame({'字段名称': iv_index, 'Information Value': iv_data})
+        ks = pd.DataFrame({'字段名称': ks_index, 'INS_KS': ks_ins, 'OOT_KS': ks_oot})
         psi_ks_iv = psi.merge(iv, how='inner', on='字段名称').merge(ks, how='inner', on='字段名称')
 
         if self.psi_threshold is None:
@@ -103,15 +103,15 @@ class Tea:
                  file_path='/Users/finupgroup/Desktop/final_report.xlsx'):
         """
 
-        :param useless_features:
-        :param label:
-        :param datetime_feature:
-        :param split_method:
-        :param oot_threshold:
-        :param oot_ratio:
-        :param null_drop_rate:
-        :param zero_drop_rate:
-        :param file_path:
+        :param useless_features: list
+        :param label: str
+        :param datetime_feature: str
+        :param split_method: 'oos' or 'oot'
+        :param oot_threshold: if split_method == 'oot'
+        :param oot_ratio: less than 1
+        :param null_drop_rate: less than 1
+        :param zero_drop_rate: less than 1
+        :param file_path: file_path
         """
         self.oot_ratio = oot_ratio
         self.oot_threshold = oot_threshold

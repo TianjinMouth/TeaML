@@ -23,7 +23,8 @@ method = [woe]
 # main
 tea = Tea(['core_lend_request_id', 'lend_customer_id', 'customer_sex', 'data_center_id', 'trace_back_time',
            'mobile', 'is_overdue_M1', 'user_id', 'id_no', 'task_id', 'id', 'id_district_name',
-           'id_province_name', 'id_city_name'], 'is_overdue_M0',
+           'id_province_name', 'id_city_name'],
+          'is_overdue_M0',
           datetime_feature='pass_time',
           oot_threshold='2019-01-01',
           null_drop_rate=0.8,
