@@ -9,9 +9,11 @@ from sklearn.model_selection import StratifiedKFold
 from openpyxl.chart import BarChart, Reference, LineChart
 import warnings
 import configparser
+import os
+current_file_dir = os.path.dirname(__file__)
 conf = configparser.ConfigParser()
 
-conf.read('conf.ini', encoding='utf-8')
+conf.read(current_file_dir + '/conf.ini', encoding='utf-8')
 warnings.filterwarnings('ignore')
 
 
