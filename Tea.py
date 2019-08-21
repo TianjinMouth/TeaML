@@ -223,7 +223,7 @@ class Tea:
         nu, nu_ratio, zero, zero_ratio = Tea.get_describe(X)
 
         # 变量初筛
-        print("Preliminary screening ...")
+        print("Preliminary screening...")
         sheet_2_tmp = pd.merge(pd.DataFrame(
             {'变量名称': list(X.columns), '空值个数': nu, '空值个数占比': nu_ratio, '0值个数': zero, '0值个数占比': zero_ratio}),
             pd.DataFrame(
