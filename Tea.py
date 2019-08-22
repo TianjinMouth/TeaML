@@ -324,7 +324,7 @@ class Tea:
         oot_bin = self.woe.cal_bin_ks(self.X_oot[self.left_features], self.y_oot, oot=True)
 
         # 评分相关性
-        sheet_correlations = self.X_woe.corr()
+        sheet_correlations = self.X_train[self.left_features].corr()
 
         # ==== sheet 特征权重和预测概率分析 ====
         # result_train = pd.concat([X_woe, pd.DataFrame(stacking_train)], axis=1).rename(columns={0: 'model_score'})
