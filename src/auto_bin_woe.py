@@ -405,16 +405,3 @@ class AutoBinWOE(object):
             expected = expected.replace(0, 0.001)
             psi[col] = np.sum((actual - expected) * np.log(actual / expected))
         return psi
-
-
-def compute_ks(prob, target):
-    """
-    target: numpy array of shape (1,)
-    prob: numpy array of shape (1,), predicted probability of the sample being positive
-    returns:
-    ks: float, ks score estimation
-    """
-
-    get_ks = lambda prob, target: ks_2samp(prob[target == 1], prob[target != 1]).statistic
-
-    return get_ks(prob, target)
