@@ -2,7 +2,6 @@ from scipy import stats
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
-from scipy.stats import ks_2samp
 
 
 class AutoBinWOE(object):
