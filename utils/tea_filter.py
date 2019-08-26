@@ -5,7 +5,7 @@ from lightgbm import LGBMClassifier
 from sklearn.base import TransformerMixin, BaseEstimator
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
-from utils.tea_utils import get_importance, feature_select
+from .tea_utils import get_importance, feature_select
 import shap
 import numpy as np
 

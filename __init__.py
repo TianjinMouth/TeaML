@@ -4,4 +4,5 @@
 # @FileName: __init__.py
 # @Software: PyCharm
 
-from Tea import *
+from . import utils
+from .Tea import WOE, Tea

@@ -1,7 +1,7 @@
-from utils.tea_utils import *
-from utils.tea_filter import *
-from utils.auto_bin_woe import AutoBinWOE
-from utils.tea_encoder import *
+from .utils.tea_utils import *
+from .utils.tea_filter import *
+from .utils.auto_bin_woe import AutoBinWOE
+from .utils.tea_encoder import *
 import openpyxl
 from openpyxl.styles import Font, Border, Side, PatternFill, colors, Alignment
 from sklearn.linear_model import LogisticRegression
