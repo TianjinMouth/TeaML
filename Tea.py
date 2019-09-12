@@ -194,7 +194,7 @@ class Tea:
 
         elif self.split_method == 'oos':
             from sklearn.model_selection import train_test_split
-            train, oot, y_train, y_oot = train_test_split(df, df[self.label], test_size=0.3, random_state=12)
+            train, oot, y_train, y_oot = train_test_split(df, df[self.label], test_size=0.2, random_state=12)
             train = train.reset_index(drop=True)
             oot = oot.reset_index(drop=True)
             y_train = y_train.reset_index(drop=True)
@@ -370,6 +370,23 @@ class Tea:
         sheet_model_info_oot['tag'] = 'OOT'
 
         # -------------------------------  STEP 5 写入表  ---------------------------------------------------------------
+        bin_ks_ins = pd.DataFrame()
+        bin_ks_oot = pd.DataFrame()
+        for i in train_bin.keys():
+            train_tmp = train_bin[i].reset_index().rename(columns={'index': 'bins'})
+            train_tmp.insert(0, 'feature', i)
+            bin_ks_ins = pd.concat([bin_ks_ins, train_tmp])
+            oot_tmp = oot_bin[i].reset_index().rename(columns={'index': 'bins'})
+            oot_tmp.insert(0, 'feature', i)
+            bin_ks_oot = pd.concat([bin_ks_oot, oot_tmp])
+
+        self.sheets['sheet_feature_bin_ins'] = bin_ks_ins
+        self.sheets['sheet_feature_bin_oot'] = bin_ks_oot
+        self.sheets['sheet_correlations'] = sheet_correlations
+        self.sheets['sheet_weights'] = sheet_weights
+        self.sheets['sheet_model_info_ins'] = sheet_model_info_ins
+        self.sheets['sheet_model_info_oot'] = sheet_model_info_oot
+
         writer = pd.ExcelWriter(self.file_path)
         self.sheets['sheet_sample'].to_excel(writer, sheet_name='样本分析', index=False)
         self.sheets['sheet_distribution'].to_excel(writer, sheet_name='变量缺失率 & 基本探索性分析', index=False)
@@ -404,6 +421,7 @@ class Tea:
                                           header=False)
                 row_index_8 += 10
         writer.save()
+
 
         # -------------------------------  STEP 6 美化（字体/字号/边框/颜色/粗细）  --------------------------------------------
         wb = openpyxl.load_workbook(self.file_path)
