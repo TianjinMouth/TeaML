@@ -400,7 +400,7 @@ class Tea:
             oot_tmp['bad'] = '[' + oot_tmp['left'].astype(str) + ',' + oot_tmp['right'].astype(str) + ')'
             train_tmp.to_excel(writer, startrow=row_index, startcol=1, sheet_name='变量逾期分布和KS值', index=False)
             oot_tmp.to_excel(writer, startrow=row_index, startcol=13, sheet_name='变量逾期分布和KS值', index=False)
-            row_index += self.bins+1
+            row_index += self.bins+2
 
         sheet_correlations.to_excel(writer, sheet_name='评分相关性', index=True)
         sheet_weights.to_excel(writer, sheet_name='模型', index=False)
@@ -421,7 +421,6 @@ class Tea:
                                           header=False)
                 row_index_8 += 10
         writer.save()
-
 
         # -------------------------------  STEP 6 美化（字体/字号/边框/颜色/粗细）  --------------------------------------------
         wb = openpyxl.load_workbook(self.file_path)
@@ -466,7 +465,7 @@ class Tea:
                 i[j].font = eval(conf.get('config', 'font1'))
                 i[j].alignment = eval(conf.get('config', 'alignment1'))
                 i[j].fill = eval(conf.get('config', 'fill2'))
-        for ind in range(1, row_index, self.bins+1):
+        for ind in range(1, row_index, self.bins+2):
             for i in sheet['B%s' % ind:'L%s' % ind]:
                 for j in range(len(i)):
                     i[j].font = eval(conf.get('config', 'font2'))
