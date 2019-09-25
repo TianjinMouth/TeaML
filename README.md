@@ -164,14 +164,15 @@ t = TeaOneHotEncoder()
 encoder = [me]
 ```
 
-##### TeaBadRateEncoder
-```Replace categorical variables with bad_rate of each bin```
 
-##### TeaMeanEncoder
-```MeanEncoder```
+```
 
-##### TeaOneHotEncoder
-```Such as OneHot```
+TeaBadRateEncoder:  Replace categorical variables with bad_rate of each bin
+TeaMeanEncoder:  MeanEncoder
+TeaOneHotEncoder: Such as Onehot
+
+```
+
 
 #### What's the method in tea.cook()
 
