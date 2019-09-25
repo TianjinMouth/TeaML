@@ -155,6 +155,8 @@ Finish 🍵
 
 This is a module for automatic processing of discrete variables in robots.
 
+We offer you three ways to deal with categorical variables
+
 ```python
 ct = TeaBadRateEncoder(num=1)
 me = TeaMeanEncoder(categorical_features=['city'])
@@ -162,9 +164,22 @@ t = TeaOneHotEncoder()
 encoder = [me]
 ```
 
+##### TeaBadRateEncoder
+```Replace categorical variables with bad_rate of each bin```
+
+##### TeaMeanEncoder
+```MeanEncoder```
+
+##### TeaOneHotEncoder
+```Such as OneHot```
+
 #### What's the method in tea.cook()
 
 This is a module for automatic selection of variables in robots.
+
+What you fill in in the Tea's method is orderly.
+
+For example, the following represents a monotone woe transformation of all variables, followed by a step-by-step regression based on p-value.
 
 ```python
 woe = Tea.WOE(bins=10, bad_rate_merge=True, bad_rate_sim_threshold=0.05, psi_threshold=0.1, iv_threshold=None)
