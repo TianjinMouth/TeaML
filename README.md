@@ -3,9 +3,16 @@
 [![GitHub Issues](https://img.shields.io/github/issues/didi/delta.svg)](https://github.com/didi/delta/issues)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/didi/delta/blob/master/LICENSE)
 
-# **Tea**
+# **Tea - Automated Modeling in Financial Domain**
 
 🎉🎉🎉 We are proud to announce that we design an automatic modeling robot based on `financial risk control field`! 🎉🎉🎉
+
+## Table of Contents
+- [Overview](#Overview)
+- [Our Goal](#Our Goal)
+- [Performance](#Performance)
+- [Quick start](#Quick start)
+- [Support](#Support)
 
 ## Overview
 
