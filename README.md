@@ -1,3 +1,8 @@
+[![Contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](CONTRIBUTING.md)
+[![GitHub top language](https://img.shields.io/github/languages/top/didi/delta)](https://img.shields.io/github/languages/top/didi/delta)
+[![GitHub Issues](https://img.shields.io/github/issues/didi/delta.svg)](https://github.com/didi/delta/issues)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/didi/delta/blob/master/LICENSE)
+
 # Tea
 
 🎉🎉🎉 We are proud to announce that we design an automatic modeling robot based on financial risk control field! 🎉🎉🎉
