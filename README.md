@@ -5,7 +5,7 @@
 
 # **Tea**
 
-🎉🎉🎉 We are proud to announce that we design an automatic modeling robot based on financial risk control field! 🎉🎉🎉
+🎉🎉🎉 We are proud to announce that we design an automatic modeling robot based on `financial risk control field`! 🎉🎉🎉
 
 ## Overview
 
