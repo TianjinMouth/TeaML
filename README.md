@@ -8,11 +8,11 @@
 🎉🎉🎉 We are proud to announce that we design an automatic modeling robot based on `financial risk control field`! 🎉🎉🎉
 
 ## Table of Contents
-- [Overview](#Overview)
-- [Our Goal](#Our Goal)
-- [Performance](#Performance)
-- [Quick start](#Quick start)
-- [Support](#Support)
+- [Overview](#overview)
+- [Our Goal](#our-goal)
+- [Performance](#performance)
+- [Quick start](#quick-start)
+- [Support](#support)
 
 ## Overview
 
@@ -32,8 +32,8 @@ It can automatically model from beginning to end, and in the end, it will also h
 
 ## Performance
 
-| Task                                        | Strategy | Dataset                   | Score           | Detail                                                                                                             |
-| ------------------------------------------- | -------- | ------------------------- | --------------- | -------------------------- |
+| Task                                        | Strategy | Dataset                   | Score            | Detail                                                                                                             |
+| ------------------------------------------- | -------- | ------------------------- | ---------------- | -------------------------- |
 | Predicting the Delay Rate of Financial Risk |   Tea    | Financial Risk Data       | **0.6894** (AUC) | WOE(Monotonic) + STEPWISE |
 | Predicting the Delay Rate of Financial Risk | LightGBM | Financial Risk Data       | **0.6773** (AUC) |         LightGBM          |
 
