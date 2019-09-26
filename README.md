@@ -14,7 +14,7 @@
 - [Quick start](#quick-start)
 - [Support](#support)
 
-## Overview
+## 📣 Overview
 
 Tea is a simple and design friendly automatic modeling learning framework.
 It can automatically model from beginning to end, and in the end, it will also help you output a model report about the model.
@@ -24,13 +24,13 @@ It can automatically model from beginning to end, and in the end, it will also h
 - **Flexible**. Tea provides a variety of variable selection methods, each of which can be self-defined. You can also assemble these algorithms in different order. 
 - **Final Report**. Tea can provide you with a final version of the model report, so that you can find the details in your model. 
 
-## Our Goal
+## ✨ Our Goal
 
 - **Automation** In the near future, we will update and add some fantastic algorithms, including but not limited to variable generation (VariableCluster is already in experimental function).
 - **Common Use** All algorithmic engineers, including model analysts, can use it to increase efficiency as long as you have some algorithmic knowledge.
 - **Wonderful thing** We hope that there will be many wonderful things to add. At present, there is no optimization algorithm and parallel strategy in this version. We will try to add these things in later iterations, maybe not too long.
 
-## Performance
+## ⏳ Performance
 
 | Task                                        | Strategy | Dataset                   | Score            | Detail                                                                                                             |
 | ------------------------------------------- | -------- | ------------------------- | ---------------- | -------------------------- |
@@ -38,7 +38,7 @@ It can automatically model from beginning to end, and in the end, it will also h
 | Predicting the Delay Rate of Financial Risk | LightGBM | Financial Risk Data       | **0.6773** (AUC) |         LightGBM          |
 
 
-## Quick start
+## 📝 Quick start
 
 ### Requirements and Installation
 
@@ -201,7 +201,7 @@ stepwise = FilterStepWise(method='p_value')
 method = [woe, stepwise]
 ```
 
-## Support
+## 💡 Support
 
 We support all people to make suggestions, because this is support and encouragement for our project.
 
