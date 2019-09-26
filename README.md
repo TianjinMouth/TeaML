@@ -43,7 +43,9 @@ It can automatically model from beginning to end, and in the end, it will also h
 ### Requirements and Installation
 
 
-The project is based on Python 3.7, Python 3.6 may also work, but it is not fully tested to ensure that all functions are normal.
+The project is based on **Python 3.7**, **Python 3.6** may also work, but it is not fully tested to ensure that all functions are normal.
+
+If you haven't installed **lightgbm**, you need to install the package yourself.
 
 ```bash
 pip install Tea

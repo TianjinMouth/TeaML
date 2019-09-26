@@ -13,3 +13,4 @@ __pycache__/
 .Python
 build/
 dist/
+Tea.egg-info/
