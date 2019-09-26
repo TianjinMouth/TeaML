@@ -30,7 +30,7 @@ __license__ = "Apache License 2.0"
 __maintainer__ = "DiegoSong, TianjinMouth"
 __email__ = "ssyshenn@gmail.com, tjszgaosan@sina.cn"
 
-__url__ = 'https://github.com/BrikerMan/Kashgari'
+__url__ = 'https://github.com/TianjinMouth/Tea'
 __description__ = 'Automated Modeling in Financial Domain.' \
                   ' Tea is a simple and design friendly automatic modeling learning framework.'
 

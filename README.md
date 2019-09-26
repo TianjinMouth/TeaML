@@ -1,7 +1,7 @@
 [![Contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](CONTRIBUTING.md)
 [![GitHub top language](https://img.shields.io/github/languages/top/TianjinMouth/Tea)](https://img.shields.io/github/languages/top/TianjinMouth/Tea)
 [![GitHub Issues](https://img.shields.io/github/issues/TianjinMouth/Tea.svg)](https://github.com/TianjinMouth/Tea/issues)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/didi/delta/blob/master/LICENSE)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/TianjinMouth/Tea/blob/master/LICENSE)
 
 # **Tea - Automated Modeling in Financial Domain**
 
