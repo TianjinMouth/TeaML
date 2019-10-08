@@ -53,6 +53,7 @@ setup(
     packages=find_packages(exclude=('tests',)),
     install_requires=install_requires,
     include_package_data=True,
+    package_data={'': ['TeaML/*.csv', 'TeaML/*.ini']},
     license=__license__,
     classifiers=[
         'License :: OSI Approved :: Apache Software License',
