@@ -1,10 +1,10 @@
-from Tea.utils.tea_encoder import *
-from Tea.utils.tea_filter import *
-from Tea.utils.tea_utils import *
-from Tea.utils.auto_bin_woe import *
-import Tea
+from TeaML.utils.tea_encoder import *
+from TeaML.utils.tea_filter import *
+from TeaML.utils.tea_utils import *
+from TeaML.utils.auto_bin_woe import *
+import TeaML
 
-data = pd.read_csv("Tea/examples.csv")
+data = pd.read_csv("TeaML/examples.csv")
 
 # encoder
 ct = TeaBadRateEncoder(num=1)
@@ -13,7 +13,7 @@ t = TeaOneHotEncoder()
 encoder = [me]
 
 # woe & feature selection
-woe = Tea.WOE(bins=10, bad_rate_merge=True, bad_rate_sim_threshold=0.05, psi_threshold=0.1, iv_threshold=None)
+woe = TeaML.WOE(bins=10, bad_rate_merge=True, bad_rate_sim_threshold=0.05, psi_threshold=0.1, iv_threshold=None)
 iv = FilterIV(200, 100)
 vif = FilterVif(50)
 mod = FilterModel('lr', 70)
@@ -26,13 +26,13 @@ stepwise = FilterStepWise(method='p_value')
 method = [woe, stepwise]
 
 # main
-tea = Tea.Tea(['core_lend_request_id', 'lend_customer_id', 'customer_sex',
+tea = TeaML.Tea(['core_lend_request_id', 'lend_customer_id', 'customer_sex',
                'data_center_id', 'trace_back_time', 'mobile', 'user_id', 'id_no', 'task_id', 'id',
                'id_district_name', 'id_province_name', 'id_city_name', 'pass_time'],
               'is_overdue_M0',
-              datetime_feature='pass_time',
-              split_method='oot',
-              file_path='report.xlsx')
+                datetime_feature='pass_time',
+                split_method='oot',
+                file_path='report.xlsx')
 tea.wash(data, null_drop_rate=0.8, zero_drop_rate=0.9)
 tea.cook(encoder)
 tea.select(method)

@@ -1,9 +1,9 @@
 [![Contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg)](CONTRIBUTING.md)
-[![GitHub top language](https://img.shields.io/github/languages/top/TianjinMouth/Tea)](https://img.shields.io/github/languages/top/TianjinMouth/Tea)
-[![GitHub Issues](https://img.shields.io/github/issues/TianjinMouth/Tea.svg)](https://github.com/TianjinMouth/Tea/issues)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/TianjinMouth/Tea/blob/master/LICENSE)
+[![GitHub top language](https://img.shields.io/github/languages/top/TianjinMouth/Tea)](https://img.shields.io/github/languages/top/TianjinMouth/TeaML)
+[![GitHub Issues](https://img.shields.io/github/issues/TianjinMouth/Tea.svg)](https://github.com/TianjinMouth/TeaML/issues)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/TianjinMouth/TeaML/blob/master/LICENSE)
 
-# **Tea - Automated Modeling in Financial Domain**
+# **TeaML - Automated Modeling in Financial Domain**
 
 🎉🎉🎉 We are proud to announce that we design an automatic modeling robot based on `financial risk control field`! 🎉🎉🎉
 
@@ -16,13 +16,13 @@
 
 ## 📣 Overview
 
-Tea is a simple and design friendly automatic modeling learning framework.
+TeaML is a simple and design friendly automatic modeling learning framework.
 It can automatically model from beginning to end, and in the end, it will also help you output a model report about the model.
 
-- **Human-friendly**. Tea's code is straightforward, well documented and tested, which makes it very easy to understand and modify.
-- **Built-in financial risk control field**. Tea built-in financial risk control field, it fits well with the use in the field of financial risk control, including WOE, and is very suitable for this scenario.
-- **Flexible**. Tea provides a variety of variable selection methods, each of which can be self-defined. You can also assemble these algorithms in different order. 
-- **Final Report**. Tea can provide you with a final version of the model report, so that you can find the details in your model. 
+- **Human-friendly**. TeaML's code is straightforward, well documented and tested, which makes it very easy to understand and modify.
+- **Built-in financial risk control field**. TeaML built-in financial risk control field, it fits well with the use in the field of financial risk control, including WOE, and is very suitable for this scenario.
+- **Flexible**. TeaML provides a variety of variable selection methods, each of which can be self-defined. You can also assemble these algorithms in different order. 
+- **Final Report**. TeaML can provide you with a final version of the model report, so that you can find the details in your model. 
 
 ## ✨ Our Goal
 
@@ -34,7 +34,7 @@ It can automatically model from beginning to end, and in the end, it will also h
 
 | Task                                        | Strategy | Dataset                   | Score            | Detail                                                                                                             |
 | ------------------------------------------- | -------- | ------------------------- | ---------------- | -------------------------- |
-| Predicting the Delay Rate of Financial Risk |   Tea    | Financial Risk Data       | **0.6894** (AUC) | WOE(Monotonic) + STEPWISE |
+| Predicting the Delay Rate of Financial Risk |   TeaML  | Financial Risk Data       | **0.6894** (AUC) | WOE(Monotonic) + STEPWISE |
 | Predicting the Delay Rate of Financial Risk | LightGBM | Financial Risk Data       | **0.6773** (AUC) |         LightGBM          |
 
 
@@ -48,7 +48,7 @@ The project is based on **Python 3.7**, **Python 3.6** may also work, but it is 
 If you haven't installed **lightgbm**, you need to install the package yourself.
 
 ```bash
-pip install Tea
+pip install TeaML
 ```
 
 ### Example Usage
@@ -56,13 +56,13 @@ pip install Tea
 Let's run a simple version.
 
 ```python
-from Tea.utils.tea_encoder import *
-from Tea.utils.tea_filter import *
-from Tea.utils.tea_utils import *
-from Tea.utils.auto_bin_woe import *
-import Tea
+from TeaML.utils.tea_encoder import *
+from TeaML.utils.tea_filter import *
+from TeaML.utils.tea_utils import *
+from TeaML.utils.auto_bin_woe import *
+import TeaML
 
-data = pd.read_csv("Tea/examples.csv")
+data = pd.read_csv("TeaML/examples.csv")
 
 # encoder
 ct = TeaBadRateEncoder(num=1)
@@ -71,7 +71,7 @@ t = TeaOneHotEncoder()
 encoder = [me]
 
 # woe & feature selection
-woe = Tea.WOE(bins=10, bad_rate_merge=True, bad_rate_sim_threshold=0.05, psi_threshold=0.1, iv_threshold=None)
+woe = TeaML.WOE(bins=10, bad_rate_merge=True, bad_rate_sim_threshold=0.05, psi_threshold=0.1, iv_threshold=None)
 iv = FilterIV(200, 100)
 vif = FilterVif(50)
 mod = FilterModel('lr', 70)
@@ -84,7 +84,7 @@ stepwise = FilterStepWise(method='p_value')
 method = [woe, stepwise]
 
 # main
-tea = Tea.Tea(['core_lend_request_id', 'lend_customer_id', 'customer_sex',
+tea = TeaML.Tea(['core_lend_request_id', 'lend_customer_id', 'customer_sex',
                'data_center_id', 'trace_back_time', 'mobile', 'user_id', 'id_no', 'task_id', 'id',
                'id_district_name', 'id_province_name', 'id_city_name', 'pass_time'],
               'is_overdue_M0',
@@ -185,12 +185,12 @@ encoder = [me]
 
 This is a module for automatic selection of variables in robots.
 
-What you fill in in the Tea's method is orderly.
+What you fill in in the TeaML's method is orderly.
 
 For example, the following represents a monotone woe transformation of all variables, followed by a step-by-step regression based on p-value.
 
 ```python
-woe = Tea.WOE(bins=10, bad_rate_merge=True, bad_rate_sim_threshold=0.05, psi_threshold=0.1, iv_threshold=None)
+woe = TeaML.WOE(bins=10, bad_rate_merge=True, bad_rate_sim_threshold=0.05, psi_threshold=0.1, iv_threshold=None)
 iv = FilterIV(200, 100)
 vif = FilterVif(50)
 mod = FilterModel('lr', 70)

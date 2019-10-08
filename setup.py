@@ -32,9 +32,9 @@ __email__ = "ssyshenn@gmail.com, tjszgaosan@sina.cn"
 
 __url__ = 'https://github.com/TianjinMouth/TeaML'
 __description__ = 'Automated Modeling in Financial Domain.' \
-                  ' Tea is a simple and design friendly automatic modeling learning framework.'
+                  ' TeaML is a simple and design friendly automatic modeling learning framework.'
 
-__version__ = find_version('Tea', 'version.py')
+__version__ = find_version('TeaML', 'version.py')
 README = (HERE / "README.md").read_text(encoding='utf-8')
 
 with codecs.open('requirements.txt', 'r', 'utf8') as reader:
