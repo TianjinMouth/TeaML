@@ -22,7 +22,7 @@ def find_version(*file_paths):
     raise RuntimeError("Unable to find version string.")
 
 
-__name__ = 'Tea'
+__name__ = 'TeaML'
 __author__ = "DiegoSong, TianjinMouth"
 __copyright__ = "Copyright 2019, TianjinMouth"
 __credits__ = []
@@ -30,7 +30,7 @@ __license__ = "Apache License 2.0"
 __maintainer__ = "DiegoSong, TianjinMouth"
 __email__ = "ssyshenn@gmail.com, tjszgaosan@sina.cn"
 
-__url__ = 'https://github.com/TianjinMouth/Tea'
+__url__ = 'https://github.com/TianjinMouth/TeaML'
 __description__ = 'Automated Modeling in Financial Domain.' \
                   ' Tea is a simple and design friendly automatic modeling learning framework.'
 
