@@ -91,7 +91,7 @@ tea = TeaML.Tea(['core_lend_request_id', 'lend_customer_id', 'customer_sex',
               datetime_feature='pass_time',
               split_method='oot',
               file_path='report.xlsx')
-tea.wash(data, null_drop_rate=0.8, zero_drop_rate=0.9)
+tea.wash(data, null_drop_rate=0.8, most_common_drop_rate=0.9)
 tea.cook(encoder)
 tea.select(method)
 tea.drink(LogisticRegression(penalty='l2', C=1, class_weight='balanced'))

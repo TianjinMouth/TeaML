@@ -27,13 +27,13 @@ method = [woe, stepwise]
 
 # main
 tea = TeaML.Tea(['core_lend_request_id', 'lend_customer_id', 'customer_sex',
-               'data_center_id', 'trace_back_time', 'mobile', 'user_id', 'id_no', 'task_id', 'id',
-               'id_district_name', 'id_province_name', 'id_city_name', 'pass_time'],
-              'is_overdue_M0',
+                'data_center_id', 'trace_back_time', 'mobile', 'user_id', 'id_no', 'task_id', 'id',
+                 'id_district_name', 'id_province_name', 'id_city_name', 'pass_time'],
+                'is_overdue_M0',
                 datetime_feature='pass_time',
                 split_method='oot',
                 file_path='report.xlsx')
-tea.wash(data, null_drop_rate=0.8, zero_drop_rate=0.9)
+tea.wash(data, null_drop_rate=0.8, most_common_drop_rate=0.9)
 tea.cook(encoder)
 tea.select(method)
 tea.drink(LogisticRegression(penalty='l2', C=1, class_weight='balanced'))

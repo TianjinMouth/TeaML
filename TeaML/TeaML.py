@@ -19,7 +19,8 @@ warnings.filterwarnings('ignore')
 
 class WOE:
     def __init__(self, bins=10, psi_threshold=None, monotony_merge=True, bad_rate_merge=False,
-                 bad_rate_sim_threshold=0.05, chi2_merge=False, chi2_threshold=3.841, iv_threshold=None):
+                 bad_rate_sim_threshold=0.05, chi2_merge=False, chi2_threshold=3.841, iv_threshold=None,
+                 prune=False, prune_threshold=0.05):
         self.bins = bins
         self.psi_threshold = psi_threshold
         self.bad_rate_merge = bad_rate_merge
@@ -28,12 +29,15 @@ class WOE:
         self.chi2_threshold = chi2_threshold
         self.monotony_merge = monotony_merge
         self.iv_threshold = iv_threshold
+        self.prune = prune
+        self.prune_threshold = prune_threshold
 
     def woe_processing(self, x_train, y_train, x_oot, y_oot, gating=True):
         # WOE编码
         woe = AutoBinWOE(bins=self.bins, monotony_merge=self.monotony_merge, bad_rate_merge=self.bad_rate_merge,
                          bad_rate_sim_threshold=self.bad_rate_sim_threshold,
-                         chi2_merge=self.chi2_merge, chi2_threshold=self.chi2_threshold)
+                         chi2_merge=self.chi2_merge, chi2_threshold=self.chi2_threshold,
+                         prune=self.prune, prune_threshold=self.prune_threshold)
         woe.fit(x_train, y_train)
         x_woe = woe.transform(x_train)
         x_oot_woe = woe.transform(x_oot)
@@ -145,14 +149,14 @@ class Tea:
     def get_describe(x):
         nu = []
         nu_ratio = []
-        zero = []
-        zero_ratio = []
+        most_common = []
+        most_common_ratio = []
         for i in x.columns:
-            zero.append(sum(x[i] == 0))
-            zero_ratio.append(sum(x[i] == 0) / x.shape[0])
+            most_common.append(sum(x[i] == (x[i].value_counts().index[0])))
+            most_common_ratio.append(sum(x[i] == (x[i].value_counts().index[0])) / x.shape[0])
             nu.append(sum(x[i].isnull()))
             nu_ratio.append(sum(x[i].isnull()) / x.shape[0])
-        return nu, nu_ratio, zero, zero_ratio
+        return nu, nu_ratio, most_common, most_common_ratio
 
     @staticmethod
     def _ks_curve(df, month=None):
@@ -177,7 +181,7 @@ class Tea:
             a.insert(0, 'month', month)
         return a
 
-    def wash(self, data, null_drop_rate=0.8, zero_drop_rate=0.9):
+    def wash(self, data, null_drop_rate=0.8, most_common_drop_rate=0.9):
         # ------------------------  STEP 1 训练测试集划分、Bad rate替换及变量初筛--------------------------------
         df = data.copy()
         df[self.datetime_feature] = pd.to_datetime(df[self.datetime_feature])
@@ -220,27 +224,27 @@ class Tea:
              'BadRate': [sum(y_train) / y_train.shape[0], sum(y_oot) / y_oot.shape[0]]})
         self.sheets['sheet_sample'] = sheet_sample
         # ==== sheet 变量缺失率 & 基本探索性分析 ====
-        nu, nu_ratio, zero, zero_ratio = Tea.get_describe(X)
+        nu, nu_ratio, most_common, most_common_ratio = Tea.get_describe(X)
 
         # 变量初筛
         print("Preliminary screening...")
         sheet_2_tmp = pd.merge(pd.DataFrame(
-            {'变量名称': list(X.columns), '空值个数': nu, '空值个数占比': nu_ratio, '0值个数': zero, '0值个数占比': zero_ratio}),
+            {'变量名称': list(X.columns), '空值个数': nu, '空值个数占比': nu_ratio, '最常值个数': most_common, '最常值个数占比': most_common_ratio}),
             pd.DataFrame(
                 X.describe().T.reset_index()[['index', 'mean', 'std', 'min', '25%', '50%', '75%', 'max']]).rename(
                 columns={'index': '变量名称'}),
             how='left', on='变量名称')
         left_features = list(set(sheet_2_tmp[sheet_2_tmp['空值个数占比'] < null_drop_rate]['变量名称']) & set(
-            sheet_2_tmp[sheet_2_tmp['0值个数占比'] < zero_drop_rate]['变量名称']))
+            sheet_2_tmp[sheet_2_tmp['最常值个数占比'] < most_common_drop_rate]['变量名称']))
 
         X = X[left_features]
         X_train = X_train[left_features]
         X_oot = X_oot[left_features]
 
-        nu, nu_ratio, zero, zero_ratio = Tea.get_describe(X)
+        nu, nu_ratio, most_common, most_common_ratio = Tea.get_describe(X)
 
         sheet_distribution = pd.concat([pd.DataFrame(
-            {'变量名称': list(X.columns), '空值个数': nu, '空值个数占比': nu_ratio, '0值个数': zero, '0值个数占比': zero_ratio}),
+            {'变量名称': list(X.columns), '空值个数': nu, '空值个数占比': nu_ratio, '最常值个数': most_common, '最常值个数占比': most_common_ratio}),
             pd.DataFrame(X.describe().T.reset_index()[
                              ['mean', 'std', 'min', '25%', '50%', '75%', 'max']])], axis=1)
 

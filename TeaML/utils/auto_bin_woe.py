@@ -36,7 +36,7 @@ class AutoBinWOE(object):
     实际应用时，可以保留IV值大于0.1的指标。
     """
     def __init__(self, bins=10, num=1, monotony_merge=True, bad_rate_merge=False, bad_rate_sim_threshold=0.05,
-                 chi2_merge=False, chi2_threshold=2.706):
+                 chi2_merge=False, chi2_threshold=2.706, prune=False, prune_threshold=0.05):
         """
 
         :param bins: 初始分箱个数
@@ -64,6 +64,8 @@ class AutoBinWOE(object):
         self.bad_rate_sim_threshold = bad_rate_sim_threshold
         self.chi2_merge = chi2_merge
         self.chi2_threshold = chi2_threshold
+        self.prune = prune
+        self.prune_threshold = prune_threshold
 
     def check_types(self, x, replace=True):
         """
@@ -218,9 +220,9 @@ class AutoBinWOE(object):
                 diff = [abs(best_bins['bad'][i] / best_bins['obs'][i] - best_bins['bad'][i + 1] /
                             best_bins['obs'][i + 1])
                         for i in range(len(best_bins['obs']) - 1)]
-                while min(diff) < (self.mean_bad_rate * self.bad_rate_sim_threshold):
+                while min(diff) <= (self.mean_bad_rate * self.bad_rate_sim_threshold):
                     for i in range(len(diff)):
-                        if diff[i] < (self.mean_bad_rate / self.bad_rate_sim_threshold):
+                        if diff[i] <= (self.mean_bad_rate * self.bad_rate_sim_threshold):
                             best_bins['bad'] = np.delete(bad, i)
                             best_bins['bad'][i] += bad[i]
                             best_bins['obs'] = np.delete(obs, i)
@@ -245,9 +247,9 @@ class AutoBinWOE(object):
                 chi2 = [(self.mean_bad_rate * best_bins['obs'][i] - best_bins['bad'][i]) ** 2 /
                         self.mean_bad_rate * best_bins['obs'][i]
                         for i in range(len(seq))]
-                while min(chi2) > self.chi2_threshold:
+                while max(chi2) >= self.chi2_threshold:
                     for i in range(len(chi2)-1):
-                        if chi2[i] > self.chi2_threshold:
+                        if chi2[i] >= self.chi2_threshold:
                             best_bins['bad'] = np.delete(bad, i)
                             best_bins['bad'][i] += bad[i]
                             best_bins['obs'] = np.delete(obs, i)
@@ -259,6 +261,33 @@ class AutoBinWOE(object):
                     chi2 = [(self.mean_bad_rate * best_bins['obs'][i] - best_bins['bad'][i]) ** 2 / self.mean_bad_rate *
                             best_bins['obs'][i] for i in range(len(seq))]
                     if len(chi2) < 2:
+                        break
+
+        # 是否防止过拟合
+        if self.prune:
+            seq = best_bins['seq']
+            bad = best_bins['bad']
+            obs = best_bins['obs']
+            best_bins = {"seq": seq, "bad": bad, "obs": obs}
+            if len(seq) > 2:
+                diff = [abs(best_bins['bad'][i] / best_bins['obs'][i] - best_bins['bad'][i + 1] /
+                            best_bins['obs'][i + 1])
+                        for i in range(len(best_bins['obs']) - 1)]
+                while max(diff) >= self.prune_threshold:
+                    for i in range(len(diff)):
+                        if diff[i] >= self.prune_threshold:
+                            best_bins['bad'] = np.delete(bad, i)
+                            best_bins['bad'][i] += bad[i]
+                            best_bins['obs'] = np.delete(obs, i)
+                            best_bins['obs'][i] += obs[i]
+                            best_bins['seq'] = np.delete(seq, i)
+                    seq = best_bins['seq']
+                    bad = best_bins['bad']
+                    obs = best_bins['obs']
+                    diff = [abs(best_bins['bad'][i] / best_bins['obs'][i] - best_bins['bad'][i + 1] /
+                                best_bins['obs'][i + 1])
+                            for i in range(len(best_bins['obs']) - 1)]
+                    if len(diff) < 2:
                         break
 
         left = [threshold[0][0]]
