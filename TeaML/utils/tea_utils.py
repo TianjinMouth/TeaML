@@ -58,6 +58,15 @@ def compute_ks(prob, target):
     return get_ks(prob, target)
 
 
+def compute_topn_recall(prob, target, n):
+    """
+    ex:
+    n=0.05
+    """
+    threshold = np.percentile(prob, 1-n)
+    return target[prob>=threshold].sum() / target.sum()
+
+
 def train_by_cv(x, y, x_oot, y_oot, sss, clf, weight=None, **kw):
     pbar = tqdm(total=100)
     auc_train, auc_test, auc_oot = [], [], []
