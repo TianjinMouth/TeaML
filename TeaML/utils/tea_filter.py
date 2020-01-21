@@ -10,6 +10,14 @@ import shap
 import numpy as np
 
 
+'''
+TODO: 
+1. 序列特征筛选：from mlxtend.feature_selection import SequentialFeatureSelector
+2. 打散特征筛选：from eli5.sklearn import PermutationImportance
+
+'''
+
+
 class FilterVif(TransformerMixin, BaseEstimator):
     def __init__(self, vif_threshold=15):
         self.vif_threshold = vif_threshold
@@ -382,3 +390,10 @@ class FilterStepWise(TransformerMixin, BaseEstimator):
 
     def transform(self, x):
         return x[self.left_features]
+
+
+if __name__ == "__main__":
+    from sklearn.feature_selection import SelectKBest, chi2, mutual_info_classif, f_classif, RFE
+    iv_filter = FilterIV()
+    iv_filter.fit(x_train, y_train)
+    x_after_filter = transform(x_train)

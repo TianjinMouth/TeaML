@@ -14,3 +14,6 @@ __pycache__/
 build/
 dist/
 TeaML.egg-info/
+
+.ipynb_checkpoints/
+.DS_store

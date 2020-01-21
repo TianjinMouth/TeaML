@@ -2,18 +2,18 @@ from .utils.tea_utils import *
 from .utils.tea_filter import *
 from .utils.auto_bin_woe import AutoBinWOE
 from .utils.tea_encoder import *
-import openpyxl
-from openpyxl.styles import Font, Border, Side, PatternFill, colors, Alignment
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import StratifiedKFold
-from openpyxl.chart import BarChart, Reference, LineChart
 import warnings
-import configparser
 import os
-current_file_dir = os.path.dirname(__file__)
-conf = configparser.ConfigParser()
 
-conf.read(current_file_dir + '/conf.ini', encoding='utf-8')
+# import openpyxl
+# from openpyxl.styles import Font, Border, Side, PatternFill, colors, Alignment
+# from openpyxl.chart import BarChart, Reference, LineChart
+# import configparser
+# current_file_dir = os.path.dirname(__file__)
+# conf = configparser.ConfigParser()
+# conf.read(current_file_dir + '/conf.ini', encoding='utf-8')
 warnings.filterwarnings('ignore')
 
 
@@ -43,8 +43,8 @@ class WOE:
         x_oot_woe = woe.transform(x_oot)
 
         # 变量稳定性
-        train_bin = woe.cal_bin_ks(x_train, y_train)
-        oot_bin = woe.cal_bin_ks(x_oot, y_oot, oot=True)
+        train_bin = woe.cal_bin_ks(x_train[x_woe.columns], y_train)
+        oot_bin = woe.cal_bin_ks(x_oot[x_woe.columns], y_oot, oot=True)
 
         # KS
         ks_ins = []
@@ -109,7 +109,7 @@ class WOE:
 
 class Tea:
     def __init__(self, useless_features, label='is_overdue', datetime_feature='create_time', split_method='oot'
-                 , oot_threshold=None, oot_ratio=1/6, file_path='final_report.xlsx'):
+                 , oot_start=None, oot_end=None, file_path='final_report.xlsx'):
         """
 
         :param useless_features: list
@@ -120,8 +120,8 @@ class Tea:
         :param oot_ratio: less than 1
         :param file_path: file_path
         """
-        self.oot_ratio = oot_ratio
-        self.oot_threshold = oot_threshold
+        self.oot_start = oot_start
+        self.oot_end = oot_end
         self.sheets = dict()
         self.ct = None  # 分类变量bad rate替换类
         self.left_features = []  # 入模型的变量
@@ -152,8 +152,12 @@ class Tea:
         most_common = []
         most_common_ratio = []
         for i in x.columns:
-            most_common.append(sum(x[i] == (x[i].value_counts().index[0])))
-            most_common_ratio.append(sum(x[i] == (x[i].value_counts().index[0])) / x.shape[0])
+            if len(x[i].value_counts()) == 0:
+                most_common.append(len(x[i]))
+                most_common_ratio.append(1.0)
+            else:
+                most_common.append(sum(x[i] == (x[i].value_counts().index[0])))
+                most_common_ratio.append(sum(x[i] == (x[i].value_counts().index[0])) / x.shape[0])
             nu.append(sum(x[i].isnull()))
             nu_ratio.append(sum(x[i].isnull()) / x.shape[0])
         return nu, nu_ratio, most_common, most_common_ratio
@@ -187,14 +191,9 @@ class Tea:
         df[self.datetime_feature] = pd.to_datetime(df[self.datetime_feature])
 
         if self.split_method == 'oot':
-            if self.oot_threshold is None:
-                train = df.sort_values(self.datetime_feature)[:df.shape[0] - int(df.shape[0] * self.oot_ratio)]\
-                    .reset_index(drop=True)
-                oot = df.sort_values(self.datetime_feature)[df.shape[0] - int(df.shape[0] * self.oot_ratio):].\
-                    reset_index(drop=True)
-            else:
-                train = df[df[self.datetime_feature] < self.oot_threshold].reset_index(drop=True)
-                oot = df[df[self.datetime_feature] >= self.oot_threshold].reset_index(drop=True)
+            oot = df[(df[self.datetime_feature] >= self.oot_start) & (df[self.datetime_feature] < self.oot_end)]
+            train = df.drop(oot.index).reset_index(drop=True)
+            oot = oot.reset_index(drop=True)
 
         elif self.split_method == 'oos':
             from sklearn.model_selection import train_test_split
@@ -231,7 +230,7 @@ class Tea:
         sheet_2_tmp = pd.merge(pd.DataFrame(
             {'变量名称': list(X.columns), '空值个数': nu, '空值个数占比': nu_ratio, '最常值个数': most_common, '最常值个数占比': most_common_ratio}),
             pd.DataFrame(
-                X.describe().T.reset_index()[['index', 'mean', 'std', 'min', '25%', '50%', '75%', 'max']]).rename(
+                X.describe().T.reset_index()).rename(
                 columns={'index': '变量名称'}),
             how='left', on='变量名称')
         left_features = list(set(sheet_2_tmp[sheet_2_tmp['空值个数占比'] < null_drop_rate]['变量名称']) & set(
@@ -241,18 +240,27 @@ class Tea:
         X_train = X_train[left_features]
         X_oot = X_oot[left_features]
 
-        nu, nu_ratio, most_common, most_common_ratio = Tea.get_describe(X)
+        nu, nu_ratio, most_common, most_common_ratio = self.get_describe(X)
 
         sheet_distribution = pd.concat([pd.DataFrame(
             {'变量名称': list(X.columns), '空值个数': nu, '空值个数占比': nu_ratio, '最常值个数': most_common, '最常值个数占比': most_common_ratio}),
-            pd.DataFrame(X.describe().T.reset_index()[
-                             ['mean', 'std', 'min', '25%', '50%', '75%', 'max']])], axis=1)
+            pd.DataFrame(X.describe().T.reset_index())], axis=1)
 
         self.sheets['sheet_distribution'] = sheet_distribution
         self.X_train = X_train
         self.X_oot = X_oot
         self.y_train = y_train
         self.y_oot = y_oot
+
+    def init_data(self, train_set, oot_set):
+        # 跳过wash这一步，可执行此函数初始化
+        self.X_train = train.drop(self.useless_features + [self.datetime_feature] + [self.label], axis=1)
+        self.y_train = train[self.label]
+        self.X_oot = oot.drop(self.useless_features + [self.datetime_feature] + [self.label], axis=1)
+        self.y_oot = oot[self.label]
+        self.train_ts = train_set[self.datetime_feature]
+        self.oot_ts = oot_set[self.datetime_feature]
+        self.sheets['sheet_distribution'] = None
 
     def cook(self, encoders):
         self.encoders = encoders
@@ -372,6 +380,7 @@ class Tea:
         sheet_model_info_ins['tag'] = 'INS'
         sheet_model_info_oot = Tea._ks_curve(model_info_tmp_oot)
         sheet_model_info_oot['tag'] = 'OOT'
+        self.sheets['model_info_tmp'] = model_info_tmp
 
         # -------------------------------  STEP 5 写入表  ---------------------------------------------------------------
         bin_ks_ins = pd.DataFrame()
@@ -425,188 +434,47 @@ class Tea:
                                           header=False)
                 row_index_8 += 10
         writer.save()
-
-        # -------------------------------  STEP 6 美化（字体/字号/边框/颜色/粗细）  --------------------------------------------
-        wb = openpyxl.load_workbook(self.file_path)
-        left, right, top, bottom = [Side(style='thin', color='000000')] * 4
-
-        sheet = wb['样本分析']
-        for i in sheet['A1':'E3']:
-            for j in range(len(i)):
-                i[j].font = eval(conf.get('config', 'font1'))
-                i[j].alignment = eval(conf.get('config', 'alignment1'))
-                i[j].border = eval(conf.get('config', 'border1'))
-        for i in sheet['A1':'E1']:
-            for j in range(len(i)):
-                i[j].font = eval(conf.get('config', 'font2'))
-                i[j].fill = eval(conf.get('config', 'fill1'))
-
-        sheet = wb['变量缺失率 & 基本探索性分析']
-        for i in sheet['A1':'L%s' % (self.sheets['sheet_distribution'].shape[0] + 1)]:
-            for j in range(len(i)):
-                i[j].font = eval(conf.get('config', 'font1'))
-                i[j].alignment = eval(conf.get('config', 'alignment1'))
-                i[j].border = eval(conf.get('config', 'border1'))
-        for i in sheet['A1':'L1']:
-            for j in range(len(i)):
-                i[j].font = eval(conf.get('config', 'font2'))
-                i[j].fill = eval(conf.get('config', 'fill1'))
-
-        sheet = wb['INS变量IV值 & 时间稳定性']
-        for i in sheet['A1':'E%s' % (self.sheets['sheet_psi_ks_iv'].shape[0] + 1)]:
-            for j in range(len(i)):
-                i[j].font = eval(conf.get('config', 'font1'))
-                i[j].alignment = eval(conf.get('config', 'alignment1'))
-                i[j].border = eval(conf.get('config', 'border1'))
-        for i in sheet['A1':'E1']:
-            for j in range(len(i)):
-                i[j].font = eval(conf.get('config', 'font2'))
-                i[j].fill = eval(conf.get('config', 'fill1'))
-
-        sheet = wb['变量逾期分布和KS值']
-        for i in sheet['A1':'X%s' % row_index]:
-            for j in range(len(i)):
-                i[j].font = eval(conf.get('config', 'font1'))
-                i[j].alignment = eval(conf.get('config', 'alignment1'))
-                i[j].fill = eval(conf.get('config', 'fill2'))
-        for ind in range(1, row_index, self.bins+2):
-            for i in sheet['B%s' % ind:'L%s' % ind]:
-                for j in range(len(i)):
-                    i[j].font = eval(conf.get('config', 'font2'))
-                    i[j].fill = eval(conf.get('config', 'fill1'))
-
-            for i in sheet['N%s' % ind:'X%s' % ind]:
-                for j in range(len(i)):
-                    i[j].font = eval(conf.get('config', 'font2'))
-                    i[j].fill = eval(conf.get('config', 'fill1'))
-
-            sheet['A%s' % ind] = 'INS'
-            sheet['M%s' % ind] = 'OOT'
-            sheet['A%s' % ind].font = eval(conf.get('config', 'font3'))
-            sheet['M%s' % ind].font = eval(conf.get('config', 'font3'))
-
-        for i in sheet['A1':'A%s' % row_index]:
-            for j in range(len(i)):
-                i[j].fill = eval(conf.get('config', 'fill3'))
-
-        for i in sheet['M1':'M%s' % row_index]:
-            for j in range(len(i)):
-                i[j].fill = eval(conf.get('config', 'fill3'))
-
-        sheet = wb['模型']
-        for i in sheet['A1':'D%s' % (sheet_weights.shape[0] + 1)]:
-            for j in range(len(i)):
-                i[j].font = eval(conf.get('config', 'font1'))
-                i[j].alignment = eval(conf.get('config', 'alignment1'))
-                i[j].border = eval(conf.get('config', 'border1'))
-        for i in sheet['A1':'D1']:
-            for j in range(len(i)):
-                i[j].font = eval(conf.get('config', 'font2'))
-                i[j].fill = eval(conf.get('config', 'fill1'))
-
-        for i in sheet['G1':'R21']:
-            for j in range(len(i)):
-                i[j].font = eval(conf.get('config', 'font1'))
-                i[j].alignment = eval(conf.get('config', 'alignment1'))
-                i[j].border = eval(conf.get('config', 'border1'))
-        for i in sheet['G1':'R1']:
-            for j in range(len(i)):
-                i[j].font = eval(conf.get('config', 'font2'))
-                i[j].fill = eval(conf.get('config', 'fill1'))
-
-        cnt = 2
-        while sheet['R'+str(cnt)].value is not None:
-            c1 = BarChart()
-            v1 = Reference(sheet, min_col=16, min_row=cnt-1, max_col=16, max_row=cnt+9)
-            c1.add_data(v1, titles_from_data=True)
-
-            c1.x_axis.title = 'Bin Decile'
-            c1.y_axis.title = 'Bad Rate'
-            c1.y_axis.majorGridlines = None
-            c1.title = sheet['R'+str(cnt)].value
-
-            # Create a second chart
-            c2 = LineChart()
-            v2 = Reference(sheet, min_col=17, min_row=cnt-1, max_col=17, max_row=cnt+9)
-            c2.add_data(v2, titles_from_data=True)
-            c2.y_axis.axId = 200
-            c2.y_axis.title = "Ks"
-
-            # Display y-axis of the second chart on the right by setting it to cross the x-axis at its maximum
-            c1.y_axis.crosses = "max"
-            c1 += c2
-
-            sheet.add_chart(c1, 'T'+str(cnt))
-            cnt += 10
-
-        sheet = wb['模型回测']
-        for i in sheet['A1':'L%s' % row_index_8]:
-            for j in range(len(i)):
-                i[j].font = eval(conf.get('config', 'font1'))
-                i[j].alignment = eval(conf.get('config', 'alignment1'))
-                i[j].border = eval(conf.get('config', 'border1'))
-        for i in sheet['A1':'L1']:
-            for j in range(len(i)):
-                i[j].font = eval(conf.get('config', 'font2'))
-                i[j].fill = eval(conf.get('config', 'fill1'))
-
-        cnt = 2
-        while sheet['A'+str(cnt)].value is not None:
-            c1 = BarChart()
-            v1 = Reference(sheet, min_col=11, min_row=cnt-1, max_col=11, max_row=cnt+9)
-            c1.add_data(v1, titles_from_data=True)
-
-            c1.x_axis.title = 'Bin Decile'
-            c1.y_axis.title = 'Bad Rate'
-            c1.y_axis.majorGridlines = None
-            c1.title = sheet['A'+str(cnt)].value
-
-            # Create a second chart
-            c2 = LineChart()
-            v2 = Reference(sheet, min_col=12, min_row=cnt-1, max_col=12, max_row=cnt+9)
-            c2.add_data(v2, titles_from_data=True)
-            c2.y_axis.axId = 200
-            c2.y_axis.title = "Ks"
-
-            # Display y-axis of the second chart on the right by setting it to cross the x-axis at its maximum
-            c1.y_axis.crosses = "max"
-            c1 += c2
-
-            sheet.add_chart(c1, 'N'+str(cnt))
-            cnt += 10
-
-        wb.create_sheet(title='数据测试说明', index=0)
-        head = wb['数据测试说明']
-        head['A1'] = '数据测试说明'
-        head.merge_cells('A1:B1')
-        head['A2'] = '提供的样本'
-        head['A3'] = '测试数据变量类型'
-        head['A4'] = '测试内容'
-        head.merge_cells('A4:A9')
-        head['A10'] = '测试结论'
-        head['B4'] = '样本分析'
-        head['B5'] = '变量缺失率 & 基本探索性分析'
-        head['B6'] = 'INS变量IV值 & 时间稳定性'
-        head['B7'] = '变量逾期分布和KS值'
-        head['B8'] = '评分相关性'
-        head['B9'] = '模型'
-        for i in head['A1':'B10']:
-            for j in range(len(i)):
-                if str(i[j])[15:18] in ('B4>', 'B5>', 'B6>', 'B7>', 'B8>', 'B9'):
-                    i[j].font = eval(conf.get('config', 'font4'))
-                    i[j].alignment = eval(conf.get('config', 'alignment1'))
-                    i[j].border = eval(conf.get('config', 'border1'))
-                else:
-                    i[j].font = eval(conf.get('config', 'font4'))
-                    i[j].alignment = eval(conf.get('config', 'alignment1'))
-                    i[j].border = eval(conf.get('config', 'border1'))
-        for i in head['A2':'A10']:
-            for j in range(len(i)):
-                i[j].font = eval(conf.get('config', 'font2'))
-                i[j].fill = eval(conf.get('config', 'fill1'))
-        for i in ['A1', 'B1']:
-            head[i].font = eval(conf.get('config', 'font2'))
-            head[i].fill = eval(conf.get('config', 'fill1'))
-
-        wb.save(self.file_path)
         print('Finish 🍵 ')
+
+    def woe_dump(self):
+        if hasattr(self, 'sheets'):
+            if 'sheet_feature_bin_ins' in self.sheets.keys():
+                sheet_feature_bin_ins = self.sheets['sheet_feature_bin_ins']
+                woe_dict = {}
+                for f in sheet_feature_bin_ins['feature'].unique():
+                    inner_map = {}
+                    _tmp = sheet_feature_bin_ins[sheet_feature_bin_ins['feature'] == f]
+                    for index, row in _tmp.iterrows():
+                        inner_map['[%s, %s)' % (row.left, row.right)] = row.woe
+                    woe_dict[f] = inner_map
+                return woe_dict
+            else:
+                raise KeyError(" 'sheet_feature_bin_ins' not in tea.sheets!")
+        else:
+            raise AttributeError("no attribute 'sheets'!")
+
+
+def woe_transformer(df, woe_dict):
+    _df = df.copy()
+    for f in woe_dict:
+        for threshold in woe_dict[f]:
+            woe_value = woe_dict[f][threshold]
+            threshold = threshold.replace('[', '').replace(' ', '').replace(')', '')
+            left, right = threshold.split(',')
+            if left == 'nan':
+                _df.loc[df[f].isnull(), f] = woe_value
+            else:
+                _df.loc[(df[f] >= float(left)) & (df[f] < float(right)), f] = woe_value
+    return _df
+
+
+def woe_todict(sheet_feature_bin_ins):
+    woe_dict = {}
+    for f in [i for i in sheet_feature_bin_ins['feature'].unique()]:
+        inner_map = {}
+        _tmp = sheet_feature_bin_ins[sheet_feature_bin_ins['feature']==f]
+        for index, row in _tmp.iterrows():
+            inner_map['[%.6f, %.6f)' %(row.left, row.right)] = np.round(row.woe, 6)
+        woe_dict[f] = inner_map
+    return woe_dict
+

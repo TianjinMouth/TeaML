@@ -60,12 +60,12 @@ class TeaBadRateEncoder(TransformerMixin, BaseEstimator):
     """
     bad_rate替换
     """
-    def __init__(self, num=10):
+    def __init__(self, num=10, categorical_features=None):
         self.categorical_var = []
         self.dictionary = dict()
         self.num = num
         self.continuous_col = []
-        self.categorical_col = []
+        self.categorical_col = categorical_features
 
     def check_types(self, x, replace=True):
         if replace:
@@ -90,8 +90,9 @@ class TeaBadRateEncoder(TransformerMixin, BaseEstimator):
         :param y: pd.Series label
         :return: CategoricalTransform对象
         """
+        if not self.categorical_col:
+            self.check_types(x)
 
-        self.check_types(x)
         if len(self.categorical_col) > 0:
             data_cate = x.loc[:, self.categorical_col]
             nan_rate = data_cate.apply(self._nan_transform, axis=0)
@@ -103,6 +104,7 @@ class TeaBadRateEncoder(TransformerMixin, BaseEstimator):
             return self
         else:
             print('Please fill in your categorical variance')
+        return self
 
     @staticmethod
     def _nan_transform(x):

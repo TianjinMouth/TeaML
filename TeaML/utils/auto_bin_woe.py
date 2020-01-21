@@ -36,7 +36,7 @@ class AutoBinWOE(object):
     实际应用时，可以保留IV值大于0.1的指标。
     """
     def __init__(self, bins=10, num=1, monotony_merge=True, bad_rate_merge=False, bad_rate_sim_threshold=0.05,
-                 chi2_merge=False, chi2_threshold=2.706, prune=False, prune_threshold=0.05):
+                 chi2_merge=False, chi2_threshold=2.706, prune=False, prune_threshold=0.05, keep_origin=False):
         """
 
         :param bins: 初始分箱个数
@@ -66,6 +66,7 @@ class AutoBinWOE(object):
         self.chi2_threshold = chi2_threshold
         self.prune = prune
         self.prune_threshold = prune_threshold
+        self.keep_origin = keep_origin  # 保留原始分箱下的指标统计
 
     def check_types(self, x, replace=True):
         """
@@ -167,15 +168,17 @@ class AutoBinWOE(object):
         data_group = data.groupby("var", as_index=False)["label"].agg(
             {'bad': np.count_nonzero, 'obs': np.size})
 
-        # 保留一份单调性合并前的分bin矩阵，用作数据分析
-        data_group_origin = data_group.copy()
-        threshold_df = pd.DataFrame([[i[0], i[1]] for i in threshold.values()], index=threshold.keys(),
-                                    columns=['left', 'right'])
-        data_group_origin = data_group_origin.merge(threshold_df, how='left', left_on='var', right_index=True)
-        data_group_origin.index = np.array(["bin_" + str(i) for i in range(data_group_origin.shape[0])])
-        data_group_origin["good"] = data_group_origin["obs"] - data_group_origin["bad"]
-        data_group_origin["good_rate"] = data_group_origin["good"] / data_group_origin["obs"]
-        data_group_origin["bad_rate"] = data_group_origin["bad"] / data_group_origin["obs"]
+        data_group_origin = None
+        if self.keep_origin:
+            # 保留一份单调性合并前的分bin矩阵，用作数据分析
+            data_group_origin = data_group.copy()
+            threshold_df = pd.DataFrame([[i[0], i[1]] for i in threshold.values()], index=threshold.keys(),
+                                        columns=['left', 'right'])
+            data_group_origin = data_group_origin.merge(threshold_df, how='left', left_on='var', right_index=True)
+            data_group_origin.index = np.array(["bin_" + str(i) for i in range(data_group_origin.shape[0])])
+            data_group_origin["good"] = data_group_origin["obs"] - data_group_origin["bad"]
+            data_group_origin["good_rate"] = data_group_origin["good"] / data_group_origin["obs"]
+            data_group_origin["bad_rate"] = data_group_origin["bad"] / data_group_origin["obs"]
 
         # 将空值单调取出，不参与合并
         nan_bin = data_group[data_group['var'] == -1]
@@ -325,7 +328,8 @@ class AutoBinWOE(object):
 
     def _woe_replace(self, x):
         x_bak = x.copy()
-        for col in tqdm(x_bak.columns):
+        do_matrix_cols = []
+        for col in tqdm(self.data_matrix):
             dm = self.data_matrix[col]
             if col in self.continuous_col:
                 x_bak.loc[x[col] == 'tails', col] = 0.0
@@ -334,15 +338,16 @@ class AutoBinWOE(object):
                         x_bak.loc[x[col].isnull(), col] = dm['woe'][i]
                     else:
                         x_bak.loc[(x[col] >= dm['left'][i]) & (x[col] < dm['right'][i]), col] = dm['woe'][i]
-        return x_bak
+            do_matrix_cols.append(col)
+        return x_bak[do_matrix_cols]
 
-    def cal_bin_ks(self, x, y, oot=False, origin=False):
+    def cal_bin_ks(self, x, y, oot=False):
         df = pd.concat([x, pd.Series(y, name='y')], axis=1)
         new_data_matrix = {}
         if oot:
             print("cal bin ks, oot...")
             for col in tqdm(x.columns):
-                if origin:
+                if self.keep_origin:
                     dm = self.data_matrix_origin[col].copy()
                 else:
                     dm = self.data_matrix[col].copy()
@@ -382,7 +387,7 @@ class AutoBinWOE(object):
         else:
             print("cal bin ks, train...")
             for col in tqdm(x.columns):
-                if origin:
+                if self.keep_origin:
                     dm = self.data_matrix_origin[col].copy()
                 else:
                     dm = self.data_matrix[col].copy()
@@ -433,3 +438,6 @@ class AutoBinWOE(object):
             expected = expected.replace(0, 0.001)
             psi[col] = np.sum((actual - expected) * np.log(actual / expected))
         return psi
+
+    def to_dataframe():
+        pass
