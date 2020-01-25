@@ -255,5 +255,3 @@ class TeaMeanEncoder:
         x_new = x_new.rename(columns={'{}_pred_1'.format(variable): variable for variable in self.categorical_features})
 
         return x_new
-
-

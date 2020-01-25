@@ -31,10 +31,10 @@ def model_evaluation(score, y_true, base_score=630, method='e-freq'):
         bad_precision.append(rr[rr.index <= i]['sum'].sum() / rr[rr.index <= i]['count'].sum())
         lift.append(rr[rr.index == i]['mean'].values[0] / lift_base)
 
-    rr['pass_ratio'] = ['%.2f'%(i*100) for i in pass_ratio]
-    rr['bad_ratio'] = ['%.2f'%(i*100) for i in bad_ratio]
-    rr['bad_recall'] = ['%.2f'%(i*100) for i in bad_callback]
-    rr['bad_precision'] = ['%.2f'%(i*100) for i in bad_precision]
+    rr['pass_ratio'] = ['%.2f' % (i*100) for i in pass_ratio]
+    rr['bad_ratio'] = ['%.2f' % (i*100) for i in bad_ratio]
+    rr['bad_recall'] = ['%.2f' % (i*100) for i in bad_callback]
+    rr['bad_precision'] = ['%.2f' % (i*100) for i in bad_precision]
     rr['lift'] = ['%.2f' % i for i in lift]
     rr['mean'] = rr['mean'].apply(lambda x: '%.2f' % (x * 100))
     return rr

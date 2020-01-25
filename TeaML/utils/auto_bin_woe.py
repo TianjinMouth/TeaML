@@ -7,7 +7,6 @@ from tqdm import tqdm
 class AutoBinWOE(object):
     """
     连续变量合并，使得woe值单调
-
     调用函数之前要进行以下处理：
     1. 异常值：
     - 异常值极少时（1%以下），将样本舍弃
@@ -19,7 +18,6 @@ class AutoBinWOE(object):
     - 连续特征缺省量适中时（10%-40%），考虑给定一个step(比如age，我们可以考虑每隔2/3岁为一个步长)，然后把它离散化，之后把NaN作为一个type加到
         属性类目中
     - 缺省值很少时（10%以下）利用填充的办法进行处理。例如用均值、中位数、众数填充，模型填充等
-
     函数结果关注：
     1. IV值为+∞处理
     - 如果可能，直接把这个分组做成一个规则，作为模型的前置条件或补充条件；
@@ -27,7 +25,6 @@ class AutoBinWOE(object):
         一个分组个体数弄得很小就不是太合理。
     - 如果上面两种方法都无法使用，建议人工把该分组的响应数和非响应的数量进行一定的调整。如果响应数原本为0，可以人工调整响应数为1，如果非响应数原本
         为0，可以人工调整非响应数为1.
-
     2. IV值的判断
     若IV信息量取值小于0.02，认为该指标对因变量没有预测能力，应该被剔除；
     若IV信息量取值在0.02与0.1之间，认为该指标对因变量有较弱的预测能力；
@@ -38,7 +35,6 @@ class AutoBinWOE(object):
     def __init__(self, bins=10, num=1, monotony_merge=True, bad_rate_merge=False, bad_rate_sim_threshold=0.05,
                  chi2_merge=False, chi2_threshold=2.706, prune=False, prune_threshold=0.05, keep_origin=False):
         """
-
         :param bins: 初始分箱个数
         :param num: 变量类别数，区分分类和连续变量
         :param bad_rate_merge: 相近的bad_rate是否要合并

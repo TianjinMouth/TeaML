@@ -5,6 +5,17 @@ from sklearn.feature_selection import SelectKBest, chi2, mutual_info_classif, f_
 from sklearn.linear_model import LogisticRegression
 from scipy.stats import ks_2samp
 from sklearn.metrics import roc_auc_score
+import h2o
+
+
+def judge_h2o(ele):
+    try:
+        if ele.__base__.__name__ == 'H2OEstimator':
+            return True
+        else:
+            return False
+    except:
+        return False
 
 
 def feature_select(x_train, y_train, method='iv', kb=100, rfe=30):
@@ -64,37 +75,74 @@ def compute_topn_recall(prob, target, n):
     n=0.05
     """
     threshold = np.percentile(prob, 1-n)
-    return target[prob>=threshold].sum() / target.sum()
+    return target[prob >= threshold].sum() / target.sum()
 
 
 def train_by_cv(x, y, x_oot, y_oot, sss, clf, weight=None, **kw):
-    pbar = tqdm(total=100)
-    auc_train, auc_test, auc_oot = [], [], []
-    ks_train, ks_test, ks_oot = [], [], []
-    stacking_train = []
-    stacking_oot = []
-    oos_idx = []
-    for train_index, test_index in sss.split(x, y):
-        _x_train, _x_test = x.iloc[train_index, :], x.iloc[test_index, :]
-        _y_train, _y_test = y[train_index], y[test_index]
-        if weight is not None:
-            clf.fit(_x_train, _y_train, sample_weight=weight[train_index])
-        else:
-            clf.fit(_x_train, _y_train, **kw)
-        oos_pred = clf.predict_proba(_x_test)[:, 1]
-        oot_pred = clf.predict_proba(x_oot)[:, 1]
-        oos_idx.extend(test_index)
-        stacking_train.extend(oos_pred)
-        stacking_oot.append(oot_pred)
-        auc_train.append(roc_auc_score(_y_train, clf.predict_proba(_x_train)[:, 1]))
-        auc_test.append(roc_auc_score(_y_test, clf.predict_proba(_x_test)[:, 1]))
-        auc_oot.append(roc_auc_score(y_oot, clf.predict_proba(x_oot)[:, 1]))
-        ks_train.append(compute_ks(clf.predict_proba(_x_train)[:, 1], _y_train))
-        ks_test.append(compute_ks(clf.predict_proba(_x_test)[:, 1], _y_test))
-        ks_oot.append(compute_ks(clf.predict_proba(x_oot)[:, 1], y_oot))
-        pbar.update(20)
+    if judge_h2o(clf):
+        h2o.init()
+        auc_train, auc_test, auc_oot = [], [], []
+        ks_train, ks_test, ks_oot = [], [], []
+        stacking_train = []
+        stacking_oot = []
+        oos_idx = []
+        x_oot = h2o.H2OFrame(x_oot)
+        for train_index, test_index in sss.split(x, y):
+            _x_train, _x_test = x.iloc[train_index, :], x.iloc[test_index, :]
+            _y_train, _y_test = y[train_index], y[test_index]
+            training_frame = h2o.H2OFrame(pd.concat([_x_train, _y_train], axis=1))
+            training_frame[_y_train.name] = training_frame[_y_train.name].asfactor()
 
-    pbar.close()
+            validation_frame = h2o.H2OFrame(pd.concat([_x_test, _y_test], axis=1))
+            validation_frame[_y_test.name] = validation_frame[_y_test.name].asfactor()
+
+            clf.train(x=list(_x_train.columns), y=_y_train.name, training_frame=training_frame)
+
+            train_pred = clf.predict(training_frame[list(_x_train.columns)])['p1']
+            oos_pred = clf.predict(validation_frame[list(_x_train.columns)])['p1']
+            oot_pred = clf.predict(x_oot[list(_x_train.columns)])['p1']
+
+            train_pred = train_pred.as_data_frame().as_matrix().flatten()
+            oos_pred = oos_pred.as_data_frame().as_matrix().flatten()
+            oot_pred = oot_pred.as_data_frame().as_matrix().flatten()
+            oos_idx.extend(test_index)
+            stacking_train.extend(oos_pred)
+            stacking_oot.append(oot_pred)
+            auc_train.append(roc_auc_score(_y_train, train_pred))
+            auc_test.append(roc_auc_score(_y_test, oos_pred))
+            auc_oot.append(roc_auc_score(y_oot, oot_pred))
+            ks_train.append(compute_ks(train_pred, _y_train))
+            ks_test.append(compute_ks(oos_pred, _y_test))
+            ks_oot.append(compute_ks(oot_pred, y_oot))
+
+    else:
+        pbar = tqdm(total=100)
+        auc_train, auc_test, auc_oot = [], [], []
+        ks_train, ks_test, ks_oot = [], [], []
+        stacking_train = []
+        stacking_oot = []
+        oos_idx = []
+        for train_index, test_index in sss.split(x, y):
+            _x_train, _x_test = x.iloc[train_index, :], x.iloc[test_index, :]
+            _y_train, _y_test = y[train_index], y[test_index]
+            if weight is not None:
+                clf.fit(_x_train, _y_train, sample_weight=weight[train_index])
+            else:
+                clf.fit(_x_train, _y_train, **kw)
+            oos_pred = clf.predict_proba(_x_test)[:, 1]
+            oot_pred = clf.predict_proba(x_oot)[:, 1]
+            oos_idx.extend(test_index)
+            stacking_train.extend(oos_pred)
+            stacking_oot.append(oot_pred)
+            auc_train.append(roc_auc_score(_y_train, clf.predict_proba(_x_train)[:, 1]))
+            auc_test.append(roc_auc_score(_y_test, clf.predict_proba(_x_test)[:, 1]))
+            auc_oot.append(roc_auc_score(y_oot, clf.predict_proba(x_oot)[:, 1]))
+            ks_train.append(compute_ks(clf.predict_proba(_x_train)[:, 1], _y_train))
+            ks_test.append(compute_ks(clf.predict_proba(_x_test)[:, 1], _y_test))
+            ks_oot.append(compute_ks(clf.predict_proba(x_oot)[:, 1], y_oot))
+            pbar.update(20)
+        pbar.close()
+
     stacking_train = pd.Series(stacking_train, index=oos_idx).sort_index().values
     stacking_oot = np.array(stacking_oot).mean(axis=0)
     print("Train AUC: %s" % np.mean(auc_train))
@@ -113,7 +161,7 @@ def get_importance(opt, x):
         if opt.booster == 'dart':
             imp = opt.get_booster().get_score(importance_type='weight')
             feature_coef = pd.DataFrame(imp, index=['feature_coef']).T.reset_index()
-            feature_coef = feature_coef.rename(columns={'index':'feature_name'})
+            feature_coef = feature_coef.rename(columns={'index': 'feature_name'})
     else:
         try:
             feature_coef = pd.concat([
@@ -127,7 +175,8 @@ def get_importance(opt, x):
             ],  axis=1)
     feature_coef['abs'] = np.abs(feature_coef['feature_coef'])
     feature_coef = feature_coef.sort_values(by='abs', ascending=False)
-    return feature_coef[['feature_name', 'feature_coef']]
+    print(feature_coef.sort_values(by='abs', ascending=False)[['feature_name', 'feature_coef']].head(20))
+    return feature_coef[['feature_name', 'feature_coef']].rename(columns={'feature_coef': 'feature_coef / percentage'})
 
 
 def cal_iv(bad_vec, good_vec):
@@ -214,8 +263,6 @@ def tag_psi(data_matrix, data_matrix_oot, tag='obs_cnt'):
 def get_describe(df):
     """
     数据描述， 空值和最常值
-    :param x:
-    :return:
     """
     nu = []
     nu_ratio = []

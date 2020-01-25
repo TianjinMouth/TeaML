@@ -7,7 +7,7 @@ import TeaML
 data = pd.read_csv("TeaML/examples.csv")
 
 # encoder
-ct = TeaBadRateEncoder(num=1)
+ct = TeaBadRateEncoder(num=1, categorical_features=[''])
 me = TeaMeanEncoder(categorical_features=['city'])
 t = TeaOneHotEncoder()
 encoder = [me]
@@ -36,5 +36,6 @@ tea = TeaML.Tea(['core_lend_request_id', 'lend_customer_id', 'customer_sex',
 tea.wash(data, null_drop_rate=0.8, most_common_drop_rate=0.9)
 tea.cook(encoder)
 tea.select(method)
-tea.drink(LogisticRegression(penalty='l2', C=1, class_weight='balanced'))
+tea.drink(LogisticRegression(penalty='l2', C=1, class_weight='balanced'),
+          StratifiedKFold(n_splits=5, random_state=11, shuffle=True))
 tea.sleep(woe.bins)
